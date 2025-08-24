@@ -116,7 +116,6 @@ contract Flip2 is AccessControl, ReentrancyGuard, Pausable {
     // Total contest volume tracking: battleId => total volume
     mapping(bytes32 => uint256) public battleTotalVolume;
 
-    // Step 10: Treasury and admin state
     address public treasuryAddress; // Protocol treasury address
     mapping(address => uint256) public treasuryBalances; // Treasury balances per token
 
@@ -150,12 +149,10 @@ contract Flip2 is AccessControl, ReentrancyGuard, Pausable {
     // Oracle role for volume reporting
     bytes32 public constant VOLUME_ORACLE_ROLE = keccak256("VOLUME_ORACLE_ROLE");
 
-    // Step 10: Enhanced role management
     bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE"); // Can pause/unpause contract
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE"); // Can manage treasury funds
     bytes32 public constant CONTEST_MODERATOR_ROLE = keccak256("CONTEST_MODERATOR_ROLE"); // Can moderate contests
 
-    // Step 9: Collector distribution optimization constants
     uint256 public constant MAX_COLLECTORS_PER_BATCH = 50; // Gas optimization limit per batch
     uint256 public constant MIN_COLLECTOR_REWARD = 1000; // Minimum reward (0.001 tokens) to avoid dust
     uint256 public constant PRECISION_MULTIPLIER = 1e18; // Higher precision for calculations
@@ -842,7 +839,7 @@ contract Flip2 is AccessControl, ReentrancyGuard, Pausable {
         require(creatorCoin.payoutRecipient() == creator, "Creator not coin owner");
 
         // Check that the creator has claimable vested amount (indicates active coin)
-        // let's here instead ensure that they've inputted 500$ worth of their creator coin
+        // [uv1000] let's here instead ensure that they've inputted 500$ worth of their creator coin
         uint256 claimableAmount = creatorCoin.getClaimableAmount();
         require(claimableAmount > 0, "No claimable vested tokens");
 
@@ -1169,7 +1166,7 @@ contract Flip2 is AccessControl, ReentrancyGuard, Pausable {
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
-    // ADMIN & EMERGENCY FUNCTIONS - Step 10 Implementation
+    // ADMIN & EMERGENCY FUNCTIONS
     // ══════════════════════════════════════════════════════════════════════════════
 
     /// @notice Emergency pause all contract operations
@@ -1344,18 +1341,3 @@ contract Flip2 is AccessControl, ReentrancyGuard, Pausable {
         emit BattleCompleted(battleId, address(0)); // address(0) indicates cancellation
     }
 }
-
-/**
- * _Interface vs Concrete Contract Type_
- *
- *   Using Interface (what we have in Flip2.sol):
- *
- *   ICreatorCoin creatorCoin = ICreatorCoin(coinAddress);
- *   // Can only access functions defined in the ICreatorCoin interface
- *
- *   Using Concrete Contract (what the test does):
- *
- *   CreatorCoin internal creatorCoin;
- *   // Later assigned: creatorCoin = CreatorCoin(creatorCoinAddress);
- *   // Can access ALL public/external functions of the CreatorCoin contract
- */
