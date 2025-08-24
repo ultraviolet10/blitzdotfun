@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {ICreatorCoin} from "@zora/interfaces/ICreatorCoin.sol";
@@ -49,15 +49,62 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         address winner;
     }
 
+    struct VestingSchedule {
+        uint256 totalAmount;
+        uint256 claimed;
+        uint256 startTime;
+        uint256 duration; // 30 days for winners
+    }
+
+    struct TradingFeeAccumulator {
+        uint256 totalAccumulatedFees;
+        uint256 startTime;
+        uint256 endTime;
+    }
+
+    struct TimelockWithdrawal {
+        uint256 amount;
+        uint256 unlockTime; // 7 days for losers
+    }
+
     mapping(bytes32 => Battle) public battles;
     mapping(address => mapping(address => bytes32)) public activeBattles;
 
     // Vault mappings: creator => coinAddress => amount
     mapping(address => mapping(address => uint256)) public depositedTokens;
     mapping(address => mapping(address => uint256)) public lockedTokens;
+    // Vesting schedules for time-locked rewards
+    mapping(address => mapping(address => VestingSchedule)) public vestingSchedules;
 
-    uint256 public constant BATTLE_DURATION = 6 hours; // to be updated with by owner, needs a write function
-    uint8 public constant WINNER_PERCENTAGE = 80;
+    // Fee accumulation tracking during contests
+    mapping(bytes32 => TradingFeeAccumulator) public battleFeeData;
+
+    // Top trader tracking for volume incentives
+    mapping(bytes32 => address[]) public battleTopTraders;
+    mapping(bytes32 => mapping(address => uint256)) public traderVolumes;
+
+    // Timelock withdrawals for losers
+    mapping(address => mapping(address => TimelockWithdrawal)) public timelockWithdrawals;
+
+    uint256 public constant BATTLE_DURATION = 12 hours; // [uv1000] to be updated with by owner, needs a write function
+    // Tier 1: Winner Rewards (70%)
+    uint256 public constant WINNER_LIQUID_BPS = 5000; // 50% immediate liquid
+    uint256 public constant WINNER_COLLECTOR_BPS = 1500; // 15% to collectors
+    uint256 public constant WINNER_VESTING_BPS = 500; // 5% time-locked vesting
+
+    // Tier 2: Flywheel Amplification (15%)
+    uint256 public constant FLYWHEEL_FEES_BPS = 1000; // 10% trading fee accumulation
+    uint256 public constant FLYWHEEL_BOOST_BPS = 500; // 5% creator coin backing boost
+
+    // Tier 3: Ecosystem Support (15%)
+    uint256 public constant LOSER_CONSOLATION_BPS = 1000; // 10% loser consolation
+    uint256 public constant TRADER_INCENTIVE_BPS = 300; // 3% volume incentives
+    uint256 public constant PROTOCOL_TREASURY_BPS = 200; // 2% protocol treasury
+
+    // Time and limit constants
+    uint256 public constant VESTING_DURATION = 30 days; // Winner vesting period
+    uint256 public constant LOSER_COOLDOWN = 7 days; // Loser withdrawal cooldown
+    uint256 public constant MAX_TOP_TRADERS = 5; // Gas optimization limit
 
     // what is the `constructor` vs `initialize` paradigm? what works when?
     constructor() {
@@ -82,7 +129,7 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         require(creatorCoin.payoutRecipient() == msg.sender, "Not coin owner");
 
         // Transfer tokens from creator to this contract
-        IERC20(coinAddress).transferFrom(msg.sender, address(this), amount);
+        IERC20(coinAddress).safeTransferFrom(msg.sender, address(this), amount);
 
         // Update deposited balance
         depositedTokens[msg.sender][coinAddress] += amount;
@@ -108,7 +155,7 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         depositedTokens[msg.sender][coinAddress] -= amount;
 
         // Transfer tokens back to creator
-        // IERC20(coinAddress).transferFrom(msg.sender, amount);  // idk
+        IERC20(coinAddress).safeTransfer(msg.sender, amount);
 
         emit TokensWithdrawn(msg.sender, coinAddress, amount);
     }
@@ -258,7 +305,7 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         address loserCoin,
         uint256 winnerStake,
         uint256 loserStake,
-        uint256 winnerPayout,
+        // uint256 winnerPayout,
         uint256 collectorPayout,
         uint256 loserKeeps,
         address[] calldata topCollectors,
@@ -306,68 +353,6 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         // Validate collector arrays
         require(topCollectors.length == collectorBalances.length, "Array length mismatch");
         require(topCollectors.length <= 100, "Too many collectors"); // Gas limit protection
-
-        // Determine winner based on scores
-        address winner;
-        address loser;
-        address winnerCoin;
-        address loserCoin;
-        uint256 winnerStake;
-        uint256 loserStake;
-
-        require(playerOneScore != playerTwoScore, "Tie scores not allowed - contest invalid");
-
-        if (playerOneScore > playerTwoScore) {
-            winner = battle.playerOne;
-            loser = battle.playerTwo;
-            winnerCoin = battle.playerOneCoin;
-            loserCoin = battle.playerTwoCoin;
-            winnerStake = battle.playerOneStake;
-            loserStake = battle.playerTwoStake;
-        } else {
-            winner = battle.playerTwo;
-            loser = battle.playerOne;
-            winnerCoin = battle.playerTwoCoin;
-            loserCoin = battle.playerOneCoin;
-            winnerStake = battle.playerTwoStake;
-            loserStake = battle.playerOneStake;
-        }
-
-        // Update battle state
-        battle.winner = winner;
-        battle.state = BattleState.COMPLETED;
-
-        // Calculate prize distribution
-        // Loser gets 20% of their own stake back
-        uint256 loserKeeps = (loserStake * 20) / 100;
-        uint256 loserLoses = loserStake - loserKeeps; // 80% goes to winner
-
-        // Winner gets 80% of their own stake + 80% of loser's stake
-        uint256 winnerPayout = (winnerStake * 80) / 100 + loserLoses;
-
-        // 20% of winner's stake goes to collectors
-        uint256 collectorPayout = (winnerStake * 20) / 100;
-
-        // Unlock and distribute tokens
-        _unlockAndDistributeTokens(
-            winner,
-            loser,
-            winnerCoin,
-            loserCoin,
-            winnerStake,
-            loserStake,
-            winnerPayout,
-            collectorPayout,
-            loserKeeps,
-            topCollectors,
-            collectorBalances
-        );
-
-        // Clear active battle tracking
-        activeBattles[battle.playerOne][battle.playerTwo] = 0;
-        activeBattles[battle.playerTwo][battle.playerOne] = 0;
-
-        emit BattleCompleted(battleId, winner);
     }
 }
 
