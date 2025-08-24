@@ -82,7 +82,7 @@ import {
  * @author Your Team
  * @custom:version 2.0.0 - Enhanced Multi-Tier Distribution
  */
-contract Flip2 is AccessControl, ReentrancyGuard, Pausable {
+contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
     // ══════════════════════════════════════════════════════════════════════════════

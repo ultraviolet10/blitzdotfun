@@ -536,12 +536,12 @@ Based on Zora's proven reward distribution patterns from `src/libs/CoinRewardsV4
 
 - Zora code comment bug at `CoinRewardsV4.sol:44` - says "10%" but implements 15% (1500 BPS) for trade referrals
 
-### Technical Implementation Specification for Flip2.sol Enhancement
+### Technical Implementation Specification for Blitz.sol Enhancement
 
 #### Current State Analysis
 
-- Basic 80/20 winner/loser distribution in `Flip2.sol:340-350`
-- Incomplete withdrawal function at `Flip2.sol:111` (missing transfer implementation)
+- Basic 80/20 winner/loser distribution in `Blitz.sol:340-350`
+- Incomplete withdrawal function at `Blitz.sol:111` (missing transfer implementation)
 - Simple collector distribution via `_distributeToCollectors()` function
 - No integration with Zora's flywheel mechanics or vesting patterns
 
@@ -724,7 +724,7 @@ uint256 constant MAX_TOP_TRADERS = 5;             // Gas optimization limit
 
 **Key Files Modified:**
 
-- `src/Flip2.sol` - Main contest contract with multi-tier distribution
+- `src/Blitz.sol` - Main contest contract with multi-tier distribution
 - `src/interfaces/ICreatorCoin.sol` - Interface for creator coin integration
 
 **Critical Fixes Applied:**
@@ -746,7 +746,7 @@ uint256 constant MAX_TOP_TRADERS = 5;             // Gas optimization limit
 - Volume validation with `MIN_TRADE_VOLUME` spam prevention
 - Time-based decay mechanism: `volume * (9500/10000) ^ hours_elapsed`
 - Anti-manipulation validation (minimum volumes, trader address validation)
-- **Location:** Added to "CORE BATTLE FUNCTIONS" section at Flip2.sol:393-431
+- **Location:** Added to "CORE BATTLE FUNCTIONS" section at Blitz.sol:393-431
 
 **B. Efficient Top Trader Sorting (✅ Complete):**
 
@@ -754,7 +754,7 @@ uint256 constant MAX_TOP_TRADERS = 5;             // Gas optimization limit
 - Handles both existing trader updates and new trader insertions
 - Maintains MAX_TOP_TRADERS = 5 limit for gas efficiency
 - Bubble sort algorithm for small arrays (more efficient than heap sort for n≤5)
-- **Location:** Added to "INTERNAL HELPER FUNCTIONS" section at Flip2.sol:682-765
+- **Location:** Added to "INTERNAL HELPER FUNCTIONS" section at Blitz.sol:682-765
 
 **C. Volume-Weighted Distribution Logic (✅ Complete):**
 
@@ -762,7 +762,7 @@ uint256 constant MAX_TOP_TRADERS = 5;             // Gas optimization limit
 - `_distributeVolumeIncentivesToAccounts()` - Actual token transfers to trader accounts
 - Proportional reward calculation: `(traderVolume / totalTopTraderVolume) * totalRewards`
 - Remainder handling - given to highest volume trader for fairness
-- **Location:** Enhanced existing function at Flip2.sol:609-700
+- **Location:** Enhanced existing function at Blitz.sol:609-700
 
 **D. Real-Time Leaderboard Views (✅ Complete):**
 
@@ -772,7 +772,7 @@ uint256 constant MAX_TOP_TRADERS = 5;             // Gas optimization limit
 - `getTraderRank(bytes32 battleId, address trader)` - Real-time ranking (1-based)
 - `getBattleVolumeStats(bytes32 battleId)` - Comprehensive statistics
 - `getTraderActivity(bytes32 battleId, address trader)` - Detailed activity breakdown
-- **Location:** New "VIEW & GETTER FUNCTIONS" section at Flip2.sol:488-616
+- **Location:** New "VIEW & GETTER FUNCTIONS" section at Blitz.sol:488-616
 
 **E. Enhanced Data Architecture:**
 
@@ -904,7 +904,7 @@ function onSwapCompleted(bytes32 battleId, address trader, uint256 volume, bytes
 - Single-pass algorithm replacing inefficient two-pass calculation
 - Optimized storage writes (batch updates instead of individual writes)
 - Memory-based reward calculation before storage updates
-- **Location:** Enhanced `_distributeToCollectors()` at Flip2.sol:986-1004
+- **Location:** Enhanced `_distributeToCollectors()` at Blitz.sol:986-1004
 
 **B. Batch Processing Architecture (✅ Complete):**
 
@@ -912,7 +912,7 @@ function onSwapCompleted(bytes32 battleId, address trader, uint256 volume, bytes
 - `_processBatch()` - Gas-efficient batch processing with configurable limits  
 - `CollectorBatchProcessed` events for off-chain monitoring
 - Automatic batch size management (50 collectors per batch)
-- **Location:** Batch functions at Flip2.sol:1080-1184
+- **Location:** Batch functions at Blitz.sol:1080-1184
 
 **C. Enhanced Remainder Handling (✅ Complete):**
 
@@ -920,7 +920,7 @@ function onSwapCompleted(bytes32 battleId, address trader, uint256 volume, bytes
 - Replaced single-recipient remainder with proportional allocation
 - Higher precision arithmetic using `PRECISION_MULTIPLIER = 1e18`
 - Minimizes rounding errors and maximizes fairness
-- **Location:** Proportional remainder function at Flip2.sol:1186-1217
+- **Location:** Proportional remainder function at Blitz.sol:1186-1217
 
 **D. Precision & Threshold Improvements (✅ Complete):**
 
@@ -975,7 +975,7 @@ struct CollectorReward {
 - `emergencyUnpause()` - Resume contract operations  
 - Integrated OpenZeppelin `Pausable` with `whenNotPaused` modifiers
 - `startContest()` protected with pause functionality
-- **Location:** Emergency functions at Flip2.sol:1248-1258
+- **Location:** Emergency functions at Blitz.sol:1248-1258
 
 **B. Batch Getter Functions (✅ Complete):**
 
@@ -983,7 +983,7 @@ struct CollectorReward {
 - `getActiveBattlesForCreator(address, address[])` - Creator's active battles
 - `getBattleSummary(bytes32)` - Comprehensive single-call battle data
 - Dramatically reduces RPC calls for UIs and dashboards
-- **Location:** Batch view functions at Flip2.sol:1299-1362
+- **Location:** Batch view functions at Blitz.sol:1299-1362
 
 **C. Treasury Management (✅ Complete):**
 
@@ -991,7 +991,7 @@ struct CollectorReward {
 - `withdrawTreasury(address, uint256)` - Withdraw accumulated protocol fees
 - `getTreasuryBalance(address)` - Check treasury balance per token
 - Fixed treasury fund accumulation (was trapped in contract)
-- **Location:** Treasury functions at Flip2.sol:1261-1297
+- **Location:** Treasury functions at Blitz.sol:1261-1297
 
 **D. Enhanced Role Management (✅ Complete):**
 
@@ -1003,7 +1003,7 @@ struct CollectorReward {
 - `grantRolesBatch(address, bytes32[])` - Batch role assignment
 - `revokeRolesBatch(address, bytes32[])` - Batch role revocation
 - `emergencyCancelBattle(bytes32, string)` - Contest cancellation for emergencies
-- **Location:** Role management at Flip2.sol:1364-1425
+- **Location:** Role management at Blitz.sol:1364-1425
 
 **E. Production-Ready Infrastructure (✅ Complete):**
 
@@ -1044,7 +1044,7 @@ struct CollectorReward {
 
 ```
 src/
-├── Flip2.sol (Main contract - 1,425+ lines - PRODUCTION READY)
+├── Blitz.sol (Main contract - 1,425+ lines - PRODUCTION READY)
 │   ├── Multi-tier distribution system (Steps 1-7) ✅
 │   ├── Volume tracking system (Step 8) ✅
 │   ├── Optimized collector distribution (Step 9) ✅  
