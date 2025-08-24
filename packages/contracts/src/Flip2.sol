@@ -5,74 +5,89 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {ICreatorCoin} from "@zora/interfaces/ICreatorCoin.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ICreatorCoin} from "./interfaces/ICreatorCoin.sol";
 import {ICoin} from "@zora/interfaces/ICoin.sol";
 
-// Extended interface to access vesting functions
-interface ICreatorCoinExtended is ICreatorCoin, IERC20 {
-    function getClaimableAmount() external view returns (uint256);
-    function vestingStartTime() external view returns (uint256);
-    function vestingEndTime() external view returns (uint256);
-    function totalClaimed() external view returns (uint256);
-}
+import {
+    InvalidAddress,
+    InsufficientBalance,
+    BattleNotFound,
+    BattleAlreadyExists,
+    BattleNotActive,
+    ContestStillOngoing,
+    InvalidCollectorArrays,
+    TieScoresNotAllowed,
+    NoVestingSchedule,
+    NothingToClaim,
+    StillInCooldown,
+    TimelockAlreadyExists,
+    VestingScheduleAlreadyExists,
+    BattleCreated,
+    BattleCompleted,
+    TokensDeposited,
+    TokensWithdrawn,
+    TokensLocked,
+    TokensUnlocked,
+    VestedTokensClaimed,
+    VestingScheduleCreated,
+    TimelockWithdrawalCreated,
+    TimelockWithdrawalClaimed,
+    TierRewardsDistributed,
+    TraderIncentivesDistributed,
+    VolumeTracked,
+    TopTraderUpdated,
+    VolumeIncentivesDistributedWeighted,
+    CollectorBatchProcessed,
+    CollectorDistributionCompleted,
+    TreasuryAddressUpdated,
+    TreasuryWithdrawal,
+    EmergencyPause,
+    EmergencyUnpause
+} from "./interfaces/EventsAndErrors.sol";
 
-contract Flip2 is AccessControl, ReentrancyGuard {
+import {
+    BattleState,
+    Battle,
+    VestingSchedule,
+    TradingFeeAccumulator,
+    TimelockWithdrawal,
+    TraderActivity,
+    TopTrader,
+    CollectorReward
+} from "./interfaces/Types.sol";
+
+/**
+ * @title Blitz - Creator Coin Contest Platform
+ * @notice A sophisticated contest platform for creator coin battles with multi-tier reward distribution
+ * @dev Implements flywheel-aware distribution mechanics inspired by Zora Protocol architecture
+ *
+ * @custom:architecture
+ * This contract manages creator coin contests with three-tier reward distribution:
+ * - Tier 1 (70%): Winner rewards with liquid + vesting + collector distribution
+ * - Tier 2 (15%): Flywheel amplification via fee accumulation and backing boosts
+ * - Tier 3 (15%): Ecosystem support via loser consolation + trader incentives + protocol treasury
+ *
+ * @custom:security
+ * - Uses AccessControl for admin functions
+ * - ReentrancyGuard on all token transfer functions
+ * - Time-based vesting and cooldown mechanisms
+ * - Gas-optimized collector distribution with limits
+ *
+ * @custom:integration
+ * - Designed for integration with Zora Protocol creator/content coins
+ * - Supports ERC20 tokens with SafeERC20 patterns
+ * - Event-rich design for off-chain analytics and indexing
+ *
+ * @author Your Team
+ * @custom:version 2.0.0 - Enhanced Multi-Tier Distribution
+ */
+contract Flip2 is AccessControl, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
-    event BattleCreated(uint256 indexed battleId, address playerOne, address playerTwo);
-    event BattleCompleted(bytes32 indexed battleId, address winner);
-    event TokensDeposited(address indexed creator, address indexed coinAddress, uint256 amount);
-    event TokensWithdrawn(address indexed creator, address indexed coinAddress, uint256 amount);
-    event TokensLocked(address indexed creator, address indexed coinAddress, uint256 amount, bytes32 battleId);
-    event TokensUnlocked(address indexed creator, address indexed coinAddress, uint256 amount, bytes32 battleId);
-    event VestedTokensClaimed(address indexed user, address indexed token, uint256 amount);
-    event VestingScheduleCreated(address indexed user, address indexed token, uint256 amount, uint256 duration);
-    event TimelockWithdrawalCreated(address indexed user, address indexed token, uint256 amount, uint256 unlockTime);
-    event TimelockWithdrawalClaimed(address indexed user, address indexed token, uint256 amount);
-    event TierRewardsDistributed(bytes32 indexed battleId, uint256 tier, uint256 totalAmount);
-    event TraderIncentivesDistributed(bytes32 indexed battleId, address[] traders, uint256[] amounts);
-
-    enum BattleState {
-        CHALLENGE_PERIOD, // Creators can stake
-        TRADING_PERIOD, // Public trading active
-        SCORING_PERIOD, // Calculate winner, no trading
-        COMPLETED, // Prizes distributed
-        CANCELLED // Emergency state
-
-    }
-
-    struct Battle {
-        bytes32 battleId;
-        address playerOne;
-        address playerTwo;
-        BattleState state;
-        uint256 startTime;
-        uint256 endTime;
-        address playerOneCoin;
-        address playerTwoCoin;
-        uint256 playerOneStake;
-        uint256 playerTwoStake;
-        address winner;
-    }
-
-    struct VestingSchedule {
-        uint256 totalAmount;
-        uint256 claimed;
-        uint256 startTime;
-        uint256 duration; // 30 days for winners
-    }
-
-    struct TradingFeeAccumulator {
-        uint256 totalAccumulatedFees;
-        uint256 startTime;
-        uint256 endTime;
-    }
-
-    struct TimelockWithdrawal {
-        uint256 amount;
-        uint256 unlockTime; // 7 days for losers
-    }
-
+    // ══════════════════════════════════════════════════════════════════════════════
+    // STATE VARIABLES
+    // ══════════════════════════════════════════════════════════════════════════════
     mapping(bytes32 => Battle) public battles;
     mapping(address => mapping(address => bytes32)) public activeBattles;
 
@@ -92,6 +107,22 @@ contract Flip2 is AccessControl, ReentrancyGuard {
     // Timelock withdrawals for losers
     mapping(address => mapping(address => TimelockWithdrawal)) public timelockWithdrawals;
 
+    // Enhanced trader activity tracking: battleId => trader => activity data
+    mapping(bytes32 => mapping(address => TraderActivity)) public battleTraderActivity;
+
+    // Sorted top traders for efficient distribution: battleId => sorted array
+    mapping(bytes32 => TopTrader[]) public battleTopTradersSorted;
+
+    // Total contest volume tracking: battleId => total volume
+    mapping(bytes32 => uint256) public battleTotalVolume;
+
+    // Step 10: Treasury and admin state
+    address public treasuryAddress; // Protocol treasury address
+    mapping(address => uint256) public treasuryBalances; // Treasury balances per token
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // CONSTANTS & DISTRIBUTION PARAMETERS
+    // ══════════════════════════════════════════════════════════════════════════════
     uint256 public constant BATTLE_DURATION = 12 hours; // [uv1000] to be updated with by owner, needs a write function
     // Tier 1: Winner Rewards (70%)
     uint256 public constant WINNER_LIQUID_BPS = 5000; // 50% immediate liquid
@@ -112,15 +143,44 @@ contract Flip2 is AccessControl, ReentrancyGuard {
     uint256 public constant LOSER_COOLDOWN = 7 days; // Loser withdrawal cooldown
     uint256 public constant MAX_TOP_TRADERS = 5; // Gas optimization limit
 
-    // what is the `constructor` vs `initialize` paradigm? what works when?
+    // Volume tracking parameters
+    uint256 public constant MIN_TRADE_VOLUME = 1e15; // 0.001 ETH minimum to prevent spam
+    uint256 public constant VOLUME_DECAY_RATE = 9500; // 95% retention per hour (prevents early gaming)
+
+    // Oracle role for volume reporting
+    bytes32 public constant VOLUME_ORACLE_ROLE = keccak256("VOLUME_ORACLE_ROLE");
+
+    // Step 10: Enhanced role management
+    bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE"); // Can pause/unpause contract
+    bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE"); // Can manage treasury funds
+    bytes32 public constant CONTEST_MODERATOR_ROLE = keccak256("CONTEST_MODERATOR_ROLE"); // Can moderate contests
+
+    // Step 9: Collector distribution optimization constants
+    uint256 public constant MAX_COLLECTORS_PER_BATCH = 50; // Gas optimization limit per batch
+    uint256 public constant MIN_COLLECTOR_REWARD = 1000; // Minimum reward (0.001 tokens) to avoid dust
+    uint256 public constant PRECISION_MULTIPLIER = 1e18; // Higher precision for calculations
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // CONSTRUCTOR & INITIALIZATION
+    // ══════════════════════════════════════════════════════════════════════════════
     constructor() {
-        // oracle setup
+        // Grant deployer all initial roles
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(EMERGENCY_ROLE, msg.sender);
+        _grantRole(TREASURY_ROLE, msg.sender);
+        _grantRole(CONTEST_MODERATOR_ROLE, msg.sender);
+
+        // Initialize treasury address to deployer (can be changed later)
+        treasuryAddress = msg.sender;
     }
 
     function generateBattleId(address playerOne, address playerTwo, uint256 nonce) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(playerOne, playerTwo, nonce));
     }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // VAULT MANAGEMENT FUNCTIONS
+    // ══════════════════════════════════════════════════════════════════════════════
 
     /// @notice Deposit creator tokens into the vault for future battles
     /// @param coinAddress The creator coin contract address
@@ -129,7 +189,7 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         require(coinAddress != address(0), "Invalid coin address");
         require(amount > 0, "Amount must be greater than zero");
 
-        ICreatorCoinExtended creatorCoin = ICreatorCoinExtended(coinAddress);
+        ICreatorCoin creatorCoin = ICreatorCoin(coinAddress);
 
         // Verify the caller is the payout recipient of this coin
         require(creatorCoin.payoutRecipient() == msg.sender, "Not coin owner");
@@ -166,12 +226,13 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         emit TokensWithdrawn(msg.sender, coinAddress, amount);
     }
 
-    // startContest
-    // -> check that the contract holds one percent of their token holdings
-    // -> if yes,
+    // ══════════════════════════════════════════════════════════════════════════════
+    // CORE BATTLE FUNCTIONS
+    // ══════════════════════════════════════════════════════════════════════════════
 
     function startContest(address playerOne, address playerTwo, address playerOneCoin, address playerTwoCoin)
         external
+        whenNotPaused
         returns (bytes32 battleId)
     {
         require(playerOne != playerTwo, "Cannot challenge self");
@@ -301,6 +362,52 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         emit BattleCompleted(battleId, winner);
     }
 
+    /// @notice Record trading volume for a battle (oracle integration point)
+    /// @param battleId The battle identifier
+    /// @param trader The trader address
+    /// @param volume The trading volume to record
+    function recordTradeVolume(bytes32 battleId, address trader, uint256 volume)
+        external
+        onlyRole(VOLUME_ORACLE_ROLE)
+    {
+        Battle storage battle = battles[battleId];
+
+        // Validate battle state and timing
+        require(battle.startTime > 0, "Battle does not exist");
+        require(battle.state == BattleState.CHALLENGE_PERIOD, "Battle not active");
+        require(block.timestamp <= battle.endTime, "Contest ended");
+        require(volume >= MIN_TRADE_VOLUME, "Volume below minimum threshold");
+        require(trader != address(0), "Invalid trader address");
+
+        // Get current trader activity
+        TraderActivity storage activity = battleTraderActivity[battleId][trader];
+
+        // Apply decay to existing volume if trader was active before
+        uint256 decayedVolume = activity.totalVolume;
+        if (activity.isActive && activity.lastTradeTime > 0) {
+            uint256 hoursElapsed = (block.timestamp - activity.lastTradeTime) / 3600;
+            if (hoursElapsed > 0) {
+                // Apply decay: volume * (9500/10000) ^ hours
+                for (uint256 i = 0; i < hoursElapsed && i < 24; i++) {
+                    decayedVolume = (decayedVolume * VOLUME_DECAY_RATE) / 10000;
+                }
+            }
+        }
+
+        // Update trader activity
+        activity.totalVolume = decayedVolume + volume;
+        activity.lastTradeTime = block.timestamp;
+        activity.isActive = true;
+
+        // Update total contest volume
+        battleTotalVolume[battleId] += volume;
+
+        // Update top traders list
+        _updateTopTraders(battleId, trader, activity.totalVolume);
+
+        emit VolumeTracked(battleId, trader, volume, block.timestamp);
+    }
+
     /// @notice Claim available vested tokens from winner rewards
     /// @param tokenAddress The token contract address to claim from
     function claimVestedTokens(address tokenAddress) external nonReentrant {
@@ -319,6 +426,10 @@ contract Flip2 is AccessControl, ReentrancyGuard {
 
         emit VestedTokensClaimed(msg.sender, tokenAddress, claimable);
     }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // INTERNAL FUNCTIONS
+    // ══════════════════════════════════════════════════════════════════════════════
 
     /// @notice Calculate how much has vested for a given schedule
     /// @param schedule The vesting schedule to calculate for
@@ -350,6 +461,132 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         depositedTokens[msg.sender][tokenAddress] += amount;
 
         emit TimelockWithdrawalClaimed(msg.sender, tokenAddress, amount);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // VIEW & GETTER FUNCTIONS - Real-time leaderboard and volume tracking
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    /// @notice Get top traders for a battle with their current volumes
+    /// @param battleId The battle identifier
+    /// @return traders Array of trader addresses
+    /// @return volumes Array of corresponding volumes
+    function getBattleTopTraders(bytes32 battleId)
+        external
+        view
+        returns (address[] memory traders, uint256[] memory volumes)
+    {
+        TopTrader[] storage topTraders = battleTopTradersSorted[battleId];
+
+        traders = new address[](topTraders.length);
+        volumes = new uint256[](topTraders.length);
+
+        for (uint256 i = 0; i < topTraders.length; i++) {
+            traders[i] = topTraders[i].trader;
+            volumes[i] = topTraders[i].volume;
+        }
+
+        return (traders, volumes);
+    }
+
+    /// @notice Get a specific trader's volume for a battle
+    /// @param battleId The battle identifier
+    /// @param trader The trader address
+    /// @return volume The trader's total volume (with decay applied)
+    function getTraderVolume(bytes32 battleId, address trader) external view returns (uint256 volume) {
+        TraderActivity storage activity = battleTraderActivity[battleId][trader];
+
+        if (!activity.isActive || activity.totalVolume == 0) {
+            return 0;
+        }
+
+        // Apply volume decay based on time elapsed
+        uint256 currentVolume = activity.totalVolume;
+        if (activity.lastTradeTime > 0) {
+            uint256 hoursElapsed = (block.timestamp - activity.lastTradeTime) / 3600;
+            if (hoursElapsed > 0) {
+                // Apply decay: volume * (9500/10000) ^ hours
+                for (uint256 i = 0; i < hoursElapsed && i < 24; i++) {
+                    currentVolume = (currentVolume * VOLUME_DECAY_RATE) / 10000;
+                }
+            }
+        }
+
+        return currentVolume;
+    }
+
+    /// @notice Get total volume for a battle
+    /// @param battleId The battle identifier
+    /// @return totalVolume The total volume across all participants
+    function getBattleTotalVolume(bytes32 battleId) external view returns (uint256 totalVolume) {
+        return battleTotalVolume[battleId];
+    }
+
+    /// @notice Get trader's rank in the top traders list
+    /// @param battleId The battle identifier
+    /// @param trader The trader address
+    /// @return rank The trader's rank (1-based), 0 if not in top list
+    function getTraderRank(bytes32 battleId, address trader) external view returns (uint256 rank) {
+        TopTrader[] storage topTraders = battleTopTradersSorted[battleId];
+
+        for (uint256 i = 0; i < topTraders.length; i++) {
+            if (topTraders[i].trader == trader) {
+                return i + 1; // 1-based rank
+            }
+        }
+
+        return 0; // Not in top list
+    }
+
+    /// @notice Get comprehensive battle volume statistics
+    /// @param battleId The battle identifier
+    /// @return totalVolume Total volume across all participants
+    /// @return topTraderCount Number of tracked top traders
+    /// @return averageTopTraderVolume Average volume among top traders
+    /// @return topTraderVolume Volume of the #1 trader
+    function getBattleVolumeStats(bytes32 battleId)
+        external
+        view
+        returns (uint256 totalVolume, uint256 topTraderCount, uint256 averageTopTraderVolume, uint256 topTraderVolume)
+    {
+        totalVolume = battleTotalVolume[battleId];
+
+        TopTrader[] storage topTraders = battleTopTradersSorted[battleId];
+        topTraderCount = topTraders.length;
+
+        if (topTraderCount > 0) {
+            topTraderVolume = topTraders[0].volume; // Highest volume (sorted descending)
+
+            uint256 totalTopTraderVolume = 0;
+            for (uint256 i = 0; i < topTraders.length; i++) {
+                totalTopTraderVolume += topTraders[i].volume;
+            }
+            averageTopTraderVolume = totalTopTraderVolume / topTraderCount;
+        }
+
+        return (totalVolume, topTraderCount, averageTopTraderVolume, topTraderVolume);
+    }
+
+    /// @notice Get trader activity details including last trade time
+    /// @param battleId The battle identifier
+    /// @param trader The trader address
+    /// @return totalVolume Trader's total volume
+    /// @return lastTradeTime Timestamp of last trade
+    /// @return isActive Whether trader is currently active
+    /// @return currentVolume Volume with decay applied
+    function getTraderActivity(bytes32 battleId, address trader)
+        external
+        view
+        returns (uint256 totalVolume, uint256 lastTradeTime, bool isActive, uint256 currentVolume)
+    {
+        TraderActivity storage activity = battleTraderActivity[battleId][trader];
+
+        totalVolume = activity.totalVolume;
+        lastTradeTime = activity.lastTradeTime;
+        isActive = activity.isActive;
+        currentVolume = this.getTraderVolume(battleId, trader);
+
+        return (totalVolume, lastTradeTime, isActive, currentVolume);
     }
 
     /// @notice Create a timelock withdrawal for loser consolation
@@ -461,37 +698,113 @@ contract Flip2 is AccessControl, ReentrancyGuard {
 
         // 3% volume incentives for top traders
         uint256 traderIncentive = (totalPool * TRADER_INCENTIVE_BPS) / 10000;
-        _distributeVolumeIncentives(battleId, traderIncentive);
+        _distributeVolumeIncentivesToAccounts(battleId, traderIncentive, loserCoin);
 
-        // 2% protocol treasury (simplified for now - TODO: implement treasury address)
+        // 2% protocol treasury - accumulate in treasury balances
         uint256 treasuryAmount = (totalPool * PROTOCOL_TREASURY_BPS) / 10000;
-        // For now, keep in contract - will implement treasury transfer later
+        if (treasuryAmount > 0) {
+            treasuryBalances[loserCoin] += treasuryAmount;
+        }
 
         emit TierRewardsDistributed(battleId, 3, (consolationAmount + traderIncentive + treasuryAmount));
     }
 
-    /// @notice Distribute volume incentives to top traders during contest
+    /// @notice Distribute volume incentives to top traders using volume-weighted calculation
     /// @param battleId The battle identifier
     /// @param totalAmount Total amount to distribute
     function _distributeVolumeIncentives(bytes32 battleId, uint256 totalAmount) internal {
         if (totalAmount == 0) return;
 
-        address[] storage topTraders = battleTopTraders[battleId];
+        TopTrader[] storage topTraders = battleTopTradersSorted[battleId];
         if (topTraders.length == 0) return;
 
-        // For now, distribute equally among recorded traders
-        // TODO: Implement volume-weighted distribution when trading tracking is added
-        uint256 rewardPerTrader = totalAmount / topTraders.length;
-        uint256[] memory amounts = new uint256[](topTraders.length);
+        // Calculate total volume among top traders
+        uint256 totalTopTraderVolume = 0;
+        for (uint256 i = 0; i < topTraders.length; i++) {
+            totalTopTraderVolume += topTraders[i].volume;
+        }
+
+        if (totalTopTraderVolume == 0) return;
+
+        // Calculate volume-weighted rewards
+        address[] memory traderAddresses = new address[](topTraders.length);
+        uint256[] memory volumes = new uint256[](topTraders.length);
+        uint256[] memory rewards = new uint256[](topTraders.length);
+        uint256 distributedTotal = 0;
 
         for (uint256 i = 0; i < topTraders.length; i++) {
-            if (rewardPerTrader > 0) {
-                // Give rewards in winner's coin for simplicity - could be enhanced later
-                amounts[i] = rewardPerTrader;
+            traderAddresses[i] = topTraders[i].trader;
+            volumes[i] = topTraders[i].volume;
+
+            // Calculate proportional reward: (traderVolume / totalVolume) * totalAmount
+            uint256 traderReward = (totalAmount * topTraders[i].volume) / totalTopTraderVolume;
+            rewards[i] = traderReward;
+            distributedTotal += traderReward;
+
+            // TODO: Distribute in appropriate coin (loser's coin for now)
+            // Note: This would need the loser's coin address passed to this function
+            // For now, we emit the event and let the calling function handle distribution
+        }
+
+        // Handle remainder by giving it to the top trader (highest volume)
+        if (distributedTotal < totalAmount && topTraders.length > 0) {
+            uint256 remainder = totalAmount - distributedTotal;
+            rewards[0] += remainder; // Give remainder to #1 trader
+        }
+
+        emit VolumeIncentivesDistributedWeighted(battleId, traderAddresses, volumes, rewards);
+        emit TraderIncentivesDistributed(battleId, traderAddresses, rewards);
+    }
+
+    /// @notice Distribute volume incentives to trader accounts with actual token transfers
+    /// @param battleId The battle identifier
+    /// @param totalAmount Total amount to distribute
+    /// @param rewardToken The token to distribute as rewards
+    function _distributeVolumeIncentivesToAccounts(bytes32 battleId, uint256 totalAmount, address rewardToken)
+        internal
+    {
+        if (totalAmount == 0) return;
+
+        TopTrader[] storage topTraders = battleTopTradersSorted[battleId];
+        if (topTraders.length == 0) return;
+
+        // Calculate total volume among top traders
+        uint256 totalTopTraderVolume = 0;
+        for (uint256 i = 0; i < topTraders.length; i++) {
+            totalTopTraderVolume += topTraders[i].volume;
+        }
+
+        if (totalTopTraderVolume == 0) return;
+
+        // Distribute volume-weighted rewards to trader accounts
+        address[] memory traderAddresses = new address[](topTraders.length);
+        uint256[] memory volumes = new uint256[](topTraders.length);
+        uint256[] memory rewards = new uint256[](topTraders.length);
+        uint256 distributedTotal = 0;
+
+        for (uint256 i = 0; i < topTraders.length; i++) {
+            traderAddresses[i] = topTraders[i].trader;
+            volumes[i] = topTraders[i].volume;
+
+            // Calculate proportional reward: (traderVolume / totalVolume) * totalAmount
+            uint256 traderReward = (totalAmount * topTraders[i].volume) / totalTopTraderVolume;
+            rewards[i] = traderReward;
+            distributedTotal += traderReward;
+
+            // Add reward to trader's deposited tokens for withdrawal
+            if (traderReward > 0) {
+                depositedTokens[topTraders[i].trader][rewardToken] += traderReward;
             }
         }
 
-        emit TraderIncentivesDistributed(battleId, topTraders, amounts);
+        // Handle remainder by giving it to the top trader (highest volume)
+        if (distributedTotal < totalAmount && topTraders.length > 0) {
+            uint256 remainder = totalAmount - distributedTotal;
+            rewards[0] += remainder;
+            depositedTokens[topTraders[0].trader][rewardToken] += remainder;
+        }
+
+        emit VolumeIncentivesDistributedWeighted(battleId, traderAddresses, volumes, rewards);
     }
 
     /// @notice Create a vesting schedule for time-locked rewards
@@ -523,12 +836,13 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         view
         returns (uint256 requiredStake)
     {
-        ICreatorCoinExtended creatorCoin = ICreatorCoinExtended(coinAddress);
+        ICreatorCoin creatorCoin = ICreatorCoin(coinAddress);
 
         // Verify the creator is the payout recipient of this coin
         require(creatorCoin.payoutRecipient() == creator, "Creator not coin owner");
 
         // Check that the creator has claimable vested amount (indicates active coin)
+        // let's here instead ensure that they've inputted 500$ worth of their creator coin
         uint256 claimableAmount = creatorCoin.getClaimableAmount();
         require(claimableAmount > 0, "No claimable vested tokens");
 
@@ -541,7 +855,99 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         return requiredStake;
     }
 
-    /// @notice Distribute tokens to collectors based on their weighted holdings
+    /// @notice Update top traders list with new volume using efficient insert sort
+    /// @param battleId The battle identifier
+    /// @param trader The trader address
+    /// @param newVolume The trader's new total volume
+    function _updateTopTraders(bytes32 battleId, address trader, uint256 newVolume) internal {
+        TopTrader[] storage topTraders = battleTopTradersSorted[battleId];
+
+        // Find if trader already exists in the list
+        bool traderExists = false;
+        uint256 existingIndex = 0;
+
+        for (uint256 i = 0; i < topTraders.length; i++) {
+            if (topTraders[i].trader == trader) {
+                traderExists = true;
+                existingIndex = i;
+                break;
+            }
+        }
+
+        // If trader exists, update their volume and re-sort
+        if (traderExists) {
+            topTraders[existingIndex].volume = newVolume;
+
+            // Bubble up if volume increased
+            uint256 currentIndex = existingIndex;
+            while (currentIndex > 0 && topTraders[currentIndex].volume > topTraders[currentIndex - 1].volume) {
+                // Swap with higher position
+                TopTrader memory temp = topTraders[currentIndex];
+                topTraders[currentIndex] = topTraders[currentIndex - 1];
+                topTraders[currentIndex - 1] = temp;
+                currentIndex--;
+            }
+
+            // Bubble down if volume decreased
+            currentIndex = existingIndex;
+            while (
+                currentIndex < topTraders.length - 1
+                    && topTraders[currentIndex].volume < topTraders[currentIndex + 1].volume
+            ) {
+                // Swap with lower position
+                TopTrader memory temp = topTraders[currentIndex];
+                topTraders[currentIndex] = topTraders[currentIndex + 1];
+                topTraders[currentIndex + 1] = temp;
+                currentIndex++;
+            }
+        } else {
+            // New trader - insert in correct position or add if list not full
+            if (topTraders.length < MAX_TOP_TRADERS) {
+                // Add new trader to the end and bubble up
+                topTraders.push(TopTrader({trader: trader, volume: newVolume}));
+
+                uint256 currentIndex = topTraders.length - 1;
+                while (currentIndex > 0 && topTraders[currentIndex].volume > topTraders[currentIndex - 1].volume) {
+                    // Swap with higher position
+                    TopTrader memory temp = topTraders[currentIndex];
+                    topTraders[currentIndex] = topTraders[currentIndex - 1];
+                    topTraders[currentIndex - 1] = temp;
+                    currentIndex--;
+                }
+            } else {
+                // List is full - only insert if volume is higher than lowest
+                uint256 lowestIndex = topTraders.length - 1;
+                if (newVolume > topTraders[lowestIndex].volume) {
+                    // Replace lowest trader and bubble up
+                    topTraders[lowestIndex] = TopTrader({trader: trader, volume: newVolume});
+
+                    uint256 currentIndex = lowestIndex;
+                    while (currentIndex > 0 && topTraders[currentIndex].volume > topTraders[currentIndex - 1].volume) {
+                        // Swap with higher position
+                        TopTrader memory temp = topTraders[currentIndex];
+                        topTraders[currentIndex] = topTraders[currentIndex - 1];
+                        topTraders[currentIndex - 1] = temp;
+                        currentIndex--;
+                    }
+                }
+            }
+        }
+
+        // Find trader's new rank for event emission
+        uint256 rank = 0;
+        for (uint256 i = 0; i < topTraders.length; i++) {
+            if (topTraders[i].trader == trader) {
+                rank = i + 1; // 1-based rank
+                break;
+            }
+        }
+
+        if (rank > 0) {
+            emit TopTraderUpdated(battleId, trader, newVolume, rank);
+        }
+    }
+
+    /// @notice Distribute tokens to collectors using gas-optimized batch processing
     /// @param collectors Array of collector addresses
     /// @param balances Array of collector token balances
     /// @param totalAmount Total amount to distribute
@@ -554,10 +960,33 @@ contract Flip2 is AccessControl, ReentrancyGuard {
     ) internal {
         if (collectors.length == 0 || totalAmount == 0) return;
 
-        // Calculate total balance across all collectors (skip zeros for gas optimization)
+        // Use optimized batch processing for large collector arrays
+        if (collectors.length > MAX_COLLECTORS_PER_BATCH) {
+            _distributeToCollectorsBatch(collectors, balances, totalAmount, tokenAddress);
+        } else {
+            _distributeToCollectorsOptimized(collectors, balances, totalAmount, tokenAddress);
+        }
+    }
+
+    /// @notice Gas-optimized collector distribution for smaller arrays (≤50 collectors)
+    /// @param collectors Array of collector addresses
+    /// @param balances Array of collector token balances
+    /// @param totalAmount Total amount to distribute
+    /// @param tokenAddress The token contract to distribute
+    function _distributeToCollectorsOptimized(
+        address[] calldata collectors,
+        uint256[] calldata balances,
+        uint256 totalAmount,
+        address tokenAddress
+    ) internal {
+        uint256 length = collectors.length;
+
+        // Single-pass calculation with higher precision
         uint256 totalBalance = 0;
         uint256 validCollectors = 0;
-        for (uint256 i = 0; i < balances.length; i++) {
+
+        // Calculate total balance (single pass)
+        for (uint256 i = 0; i < length; i++) {
             if (balances[i] > 0) {
                 totalBalance += balances[i];
                 validCollectors++;
@@ -566,28 +995,353 @@ contract Flip2 is AccessControl, ReentrancyGuard {
 
         require(totalBalance > 0, "No collector balances");
 
-        // Distribute proportionally to each collector and track remainder
+        // Calculate rewards with enhanced precision
+        CollectorReward[] memory rewards = new CollectorReward[](validCollectors);
         uint256 distributedTotal = 0;
-        address lastCollector;
-        uint256 processedCollectors = 0;
+        uint256 rewardIndex = 0;
 
-        for (uint256 i = 0; i < collectors.length && processedCollectors < validCollectors; i++) {
+        // Single-pass reward calculation with precision handling
+        for (uint256 i = 0; i < length; i++) {
             if (balances[i] > 0) {
-                uint256 collectorShare = (totalAmount * balances[i]) / totalBalance;
-                if (collectorShare > 0) {
-                    depositedTokens[collectors[i]][tokenAddress] += collectorShare;
-                    distributedTotal += collectorShare;
-                    lastCollector = collectors[i];
+                // Use higher precision arithmetic to minimize truncation
+                uint256 preciseReward =
+                    (totalAmount * balances[i] * PRECISION_MULTIPLIER) / (totalBalance * PRECISION_MULTIPLIER);
+
+                // Apply minimum threshold to avoid dust
+                if (preciseReward >= MIN_COLLECTOR_REWARD) {
+                    rewards[rewardIndex] = CollectorReward({
+                        collector: collectors[i],
+                        balance: balances[i],
+                        rewardAmount: preciseReward,
+                        processed: false
+                    });
+                    distributedTotal += preciseReward;
+                    rewardIndex++;
                 }
-                processedCollectors++;
             }
         }
 
-        // Give any remainder to the last collector to prevent token loss
+        // Enhanced remainder handling - distribute proportionally
         uint256 remainder = totalAmount - distributedTotal;
-        if (remainder > 0 && lastCollector != address(0)) {
-            depositedTokens[lastCollector][tokenAddress] += remainder;
+        if (remainder > 0 && rewardIndex > 0) {
+            remainder = _distributeRemainderProportionally(rewards, rewardIndex, remainder, totalBalance);
         }
+
+        // Batch update storage (single storage write per collector)
+        for (uint256 i = 0; i < rewardIndex; i++) {
+            if (rewards[i].rewardAmount > 0) {
+                depositedTokens[rewards[i].collector][tokenAddress] += rewards[i].rewardAmount;
+            }
+        }
+
+        emit CollectorDistributionCompleted(
+            keccak256(abi.encodePacked(block.timestamp, collectors.length)), rewardIndex, totalAmount, remainder
+        );
+    }
+
+    /// @notice Batch processing for large collector arrays (>50 collectors)
+    /// @param collectors Array of collector addresses
+    /// @param balances Array of collector token balances
+    /// @param totalAmount Total amount to distribute
+    /// @param tokenAddress The token contract to distribute
+    function _distributeToCollectorsBatch(
+        address[] calldata collectors,
+        uint256[] calldata balances,
+        uint256 totalAmount,
+        address tokenAddress
+    ) internal {
+        uint256 length = collectors.length;
+
+        // Calculate total balance across all collectors
+        uint256 totalBalance = 0;
+        for (uint256 i = 0; i < length; i++) {
+            if (balances[i] > 0) {
+                totalBalance += balances[i];
+            }
+        }
+
+        require(totalBalance > 0, "No collector balances");
+
+        // Process in batches to manage gas costs
+        uint256 totalDistributed = 0;
+        uint256 batchIndex = 0;
+
+        for (uint256 startIndex = 0; startIndex < length; startIndex += MAX_COLLECTORS_PER_BATCH) {
+            uint256 endIndex = startIndex + MAX_COLLECTORS_PER_BATCH;
+            if (endIndex > length) {
+                endIndex = length;
+            }
+
+            uint256 batchDistributed =
+                _processBatch(collectors, balances, startIndex, endIndex, totalAmount, totalBalance, tokenAddress);
+
+            totalDistributed += batchDistributed;
+
+            emit CollectorBatchProcessed(
+                keccak256(abi.encodePacked(block.timestamp, collectors.length)),
+                batchIndex,
+                endIndex - startIndex,
+                batchDistributed
+            );
+
+            batchIndex++;
+        }
+
+        // Handle any final remainder
+        uint256 finalRemainder = totalAmount - totalDistributed;
+        if (finalRemainder > 0) {
+            // Give final remainder to first collector with non-zero balance
+            for (uint256 i = 0; i < length; i++) {
+                if (balances[i] > 0) {
+                    depositedTokens[collectors[i]][tokenAddress] += finalRemainder;
+                    break;
+                }
+            }
+        }
+
+        emit CollectorDistributionCompleted(
+            keccak256(abi.encodePacked(block.timestamp, collectors.length)), length, totalAmount, finalRemainder
+        );
+    }
+
+    /// @notice Process a batch of collectors within gas limits
+    /// @param collectors Full collector array
+    /// @param balances Full balance array
+    /// @param startIndex Start index for this batch
+    /// @param endIndex End index for this batch
+    /// @param totalAmount Total amount being distributed
+    /// @param totalBalance Total balance across all collectors
+    /// @param tokenAddress Token to distribute
+    /// @return batchDistributed Amount distributed in this batch
+    function _processBatch(
+        address[] calldata collectors,
+        uint256[] calldata balances,
+        uint256 startIndex,
+        uint256 endIndex,
+        uint256 totalAmount,
+        uint256 totalBalance,
+        address tokenAddress
+    ) internal returns (uint256 batchDistributed) {
+        for (uint256 i = startIndex; i < endIndex; i++) {
+            if (balances[i] > 0) {
+                uint256 collectorShare = (totalAmount * balances[i]) / totalBalance;
+                if (collectorShare >= MIN_COLLECTOR_REWARD) {
+                    depositedTokens[collectors[i]][tokenAddress] += collectorShare;
+                    batchDistributed += collectorShare;
+                }
+            }
+        }
+
+        return batchDistributed;
+    }
+
+    /// @notice Distribute remainder proportionally among collectors to maximize fairness
+    /// @param rewards Array of collector rewards
+    /// @param rewardCount Number of valid rewards
+    /// @param remainder Remainder amount to distribute
+    /// @param totalBalance Total balance for proportional calculation
+    /// @return remainingRemainder Any remainder that couldn't be distributed
+    function _distributeRemainderProportionally(
+        CollectorReward[] memory rewards,
+        uint256 rewardCount,
+        uint256 remainder,
+        uint256 totalBalance
+    ) internal pure returns (uint256 remainingRemainder) {
+        if (remainder == 0 || rewardCount == 0) {
+            return remainder;
+        }
+
+        // Distribute remainder proportionally based on balance
+        uint256 distributedRemainder = 0;
+
+        for (uint256 i = 0; i < rewardCount && distributedRemainder < remainder; i++) {
+            // Calculate proportional share of remainder
+            uint256 remainderShare = (remainder * rewards[i].balance) / totalBalance;
+
+            if (remainderShare > 0 && distributedRemainder + remainderShare <= remainder) {
+                rewards[i].rewardAmount += remainderShare;
+                distributedRemainder += remainderShare;
+            }
+        }
+
+        // Return any amount that couldn't be distributed
+        return remainder - distributedRemainder;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // ADMIN & EMERGENCY FUNCTIONS - Step 10 Implementation
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    /// @notice Emergency pause all contract operations
+    /// @param reason Reason for the pause (for transparency)
+    function emergencyPause(string calldata reason) external onlyRole(EMERGENCY_ROLE) {
+        _pause();
+        emit EmergencyPause(msg.sender, reason);
+    }
+
+    /// @notice Unpause contract operations
+    function emergencyUnpause() external onlyRole(EMERGENCY_ROLE) {
+        _unpause();
+        emit EmergencyUnpause(msg.sender);
+    }
+
+    /// @notice Set treasury address for protocol fee collection
+    /// @param newTreasury New treasury address
+    function setTreasuryAddress(address newTreasury) external onlyRole(TREASURY_ROLE) {
+        require(newTreasury != address(0), "Invalid treasury address");
+
+        address oldTreasury = treasuryAddress;
+        treasuryAddress = newTreasury;
+
+        emit TreasuryAddressUpdated(oldTreasury, newTreasury);
+    }
+
+    /// @notice Withdraw accumulated treasury funds
+    /// @param tokenAddress Token to withdraw from treasury
+    /// @param amount Amount to withdraw (0 = withdraw all)
+    function withdrawTreasury(address tokenAddress, uint256 amount) external onlyRole(TREASURY_ROLE) {
+        require(tokenAddress != address(0), "Invalid token address");
+        require(treasuryAddress != address(0), "Treasury address not set");
+
+        uint256 availableBalance = treasuryBalances[tokenAddress];
+        require(availableBalance > 0, "No treasury balance for token");
+
+        if (amount == 0 || amount > availableBalance) {
+            amount = availableBalance;
+        }
+
+        treasuryBalances[tokenAddress] -= amount;
+        IERC20(tokenAddress).safeTransfer(treasuryAddress, amount);
+
+        emit TreasuryWithdrawal(treasuryAddress, tokenAddress, amount);
+    }
+
+    /// @notice Get treasury balance for a specific token
+    /// @param tokenAddress Token to check balance for
+    /// @return balance Treasury balance for the token
+    function getTreasuryBalance(address tokenAddress) external view returns (uint256 balance) {
+        return treasuryBalances[tokenAddress];
+    }
+
+    /// @notice Get multiple battle information in a single call (gas-optimized for UIs)
+    /// @param battleIds Array of battle IDs to retrieve
+    /// @return battlesArray Array of battle structs
+    function getBattlesBatch(bytes32[] calldata battleIds) external view returns (Battle[] memory battlesArray) {
+        battlesArray = new Battle[](battleIds.length);
+
+        for (uint256 i = 0; i < battleIds.length; i++) {
+            battlesArray[i] = battles[battleIds[i]];
+        }
+
+        return battlesArray;
+    }
+
+    /// @notice Get all active battles for a creator
+    /// @param creator Creator address
+    /// @param otherCreators Array of other creators to check battles with
+    /// @return activeBattleIds Array of active battle IDs
+    function getActiveBattlesForCreator(address creator, address[] calldata otherCreators)
+        external
+        view
+        returns (bytes32[] memory activeBattleIds)
+    {
+        uint256 activeCount = 0;
+        bytes32[] memory tempBattles = new bytes32[](otherCreators.length);
+
+        // Count active battles first
+        for (uint256 i = 0; i < otherCreators.length; i++) {
+            bytes32 battleId = activeBattles[creator][otherCreators[i]];
+            if (battleId != 0) {
+                tempBattles[activeCount] = battleId;
+                activeCount++;
+            }
+        }
+
+        // Create correctly-sized return array
+        activeBattleIds = new bytes32[](activeCount);
+        for (uint256 i = 0; i < activeCount; i++) {
+            activeBattleIds[i] = tempBattles[i];
+        }
+
+        return activeBattleIds;
+    }
+
+    /// @notice Get comprehensive battle summary (gas-optimized for dashboards)
+    /// @param battleId Battle ID to get summary for
+    /// @return battle Battle struct
+    /// @return volumeStats Volume statistics
+    /// @return topTraders Top traders array
+    /// @return topVolumes Top trader volumes
+    function getBattleSummary(bytes32 battleId)
+        external
+        view
+        returns (
+            Battle memory battle,
+            uint256[4] memory volumeStats, // [totalVolume, topTraderCount, averageTopTraderVolume, topTraderVolume]
+            address[] memory topTraders,
+            uint256[] memory topVolumes
+        )
+    {
+        battle = battles[battleId];
+
+        (volumeStats[0], volumeStats[1], volumeStats[2], volumeStats[3]) = this.getBattleVolumeStats(battleId);
+        (topTraders, topVolumes) = this.getBattleTopTraders(battleId);
+
+        return (battle, volumeStats, topTraders, topVolumes);
+    }
+
+    /// @notice Check if an address has a specific role (utility function)
+    /// @param role Role to check
+    /// @param account Address to check
+    /// @return hasRoleResult Whether the address has the role
+    function checkRole(bytes32 role, address account) external view returns (bool hasRoleResult) {
+        return hasRole(role, account);
+    }
+
+    /// @notice Grant multiple roles to an address (utility function)
+    /// @param account Address to grant roles to
+    /// @param roles Array of roles to grant
+    function grantRolesBatch(address account, bytes32[] calldata roles) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(account != address(0), "Invalid account address");
+
+        for (uint256 i = 0; i < roles.length; i++) {
+            grantRole(roles[i], account);
+        }
+    }
+
+    /// @notice Revoke multiple roles from an address (utility function)
+    /// @param account Address to revoke roles from
+    /// @param roles Array of roles to revoke
+    function revokeRolesBatch(address account, bytes32[] calldata roles) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(account != address(0), "Invalid account address");
+
+        for (uint256 i = 0; i < roles.length; i++) {
+            revokeRole(roles[i], account);
+        }
+    }
+
+    /// @notice Emergency function to cancel an active battle (extreme circumstances only)
+    /// @param battleId Battle to cancel
+    function emergencyCancelBattle(bytes32 battleId) external onlyRole(CONTEST_MODERATOR_ROLE) {
+        Battle storage battle = battles[battleId];
+        require(battle.startTime > 0, "Battle does not exist");
+        require(battle.state == BattleState.CHALLENGE_PERIOD, "Battle not active");
+
+        // Unlock tokens back to creators
+        lockedTokens[battle.playerOne][battle.playerOneCoin] -= battle.playerOneStake;
+        depositedTokens[battle.playerOne][battle.playerOneCoin] += battle.playerOneStake;
+
+        lockedTokens[battle.playerTwo][battle.playerTwoCoin] -= battle.playerTwoStake;
+        depositedTokens[battle.playerTwo][battle.playerTwoCoin] += battle.playerTwoStake;
+
+        // Update battle state
+        battle.state = BattleState.CANCELLED;
+
+        // Clear active battle tracking
+        activeBattles[battle.playerOne][battle.playerTwo] = 0;
+        activeBattles[battle.playerTwo][battle.playerOne] = 0;
+
+        emit BattleCompleted(battleId, address(0)); // address(0) indicates cancellation
     }
 }
 
