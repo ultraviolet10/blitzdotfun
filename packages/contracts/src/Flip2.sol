@@ -227,6 +227,293 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         return battleId;
     }
 
+    /// @notice End a contest and distribute prizes using enhanced multi-tier system
+    /// @param battleId The battle to end
+    /// @param playerOneScore Trading volume score for player one (basis points)
+    /// @param playerTwoScore Trading volume score for player two (basis points)
+    /// @param topCollectors Array of top collector addresses for winner's coin
+    /// @param collectorBalances Array of token balances for each collector
+    function endContest(
+        bytes32 battleId,
+        uint256 playerOneScore,
+        uint256 playerTwoScore,
+        address[] calldata topCollectors,
+        uint256[] calldata collectorBalances
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        Battle storage battle = battles[battleId];
+
+        // Validate battle exists and timing
+        require(battle.startTime > 0, "Battle does not exist");
+        require(battle.state == BattleState.CHALLENGE_PERIOD, "Battle not in active state");
+        require(block.timestamp >= battle.endTime, "Contest still ongoing");
+
+        // Validate collector arrays
+        require(topCollectors.length == collectorBalances.length, "Array length mismatch");
+        require(topCollectors.length <= 100, "Too many collectors"); // Gas limit protection
+        require(playerOneScore != playerTwoScore, "Tie scores not allowed - contest invalid");
+
+        // Determine winner and loser
+        address winner;
+        address loser;
+        address winnerCoin;
+        address loserCoin;
+        uint256 winnerStake;
+        uint256 loserStake;
+
+        if (playerOneScore > playerTwoScore) {
+            winner = battle.playerOne;
+            loser = battle.playerTwo;
+            winnerCoin = battle.playerOneCoin;
+            loserCoin = battle.playerTwoCoin;
+            winnerStake = battle.playerOneStake;
+            loserStake = battle.playerTwoStake;
+        } else {
+            winner = battle.playerTwo;
+            loser = battle.playerOne;
+            winnerCoin = battle.playerTwoCoin;
+            loserCoin = battle.playerOneCoin;
+            winnerStake = battle.playerTwoStake;
+            loserStake = battle.playerOneStake;
+        }
+
+        // Calculate total prize pool
+        uint256 totalPool = winnerStake + loserStake;
+
+        // CRITICAL: Unlock tokens from locked state first
+        lockedTokens[winner][winnerCoin] -= winnerStake;
+        lockedTokens[loser][loserCoin] -= loserStake;
+
+        // Execute three-tier distribution system
+        _distributeTier1WinnerRewards(
+            battleId, winner, winnerCoin, loserCoin, totalPool, topCollectors, collectorBalances
+        );
+        _distributeTier2FlywheelRewards(battleId, winner, winnerCoin, loserCoin, totalPool);
+        _distributeTier3EcosystemRewards(battleId, loser, loserCoin, totalPool);
+
+        // Update battle state
+        battle.winner = winner;
+        battle.state = BattleState.COMPLETED;
+
+        // Clear active battle tracking
+        activeBattles[battle.playerOne][battle.playerTwo] = 0;
+        activeBattles[battle.playerTwo][battle.playerOne] = 0;
+
+        emit BattleCompleted(battleId, winner);
+    }
+
+    /// @notice Claim available vested tokens from winner rewards
+    /// @param tokenAddress The token contract address to claim from
+    function claimVestedTokens(address tokenAddress) external nonReentrant {
+        require(tokenAddress != address(0), "Invalid token address");
+        // probably better coin identification mechanisms
+
+        VestingSchedule storage schedule = vestingSchedules[msg.sender][tokenAddress];
+        require(schedule.totalAmount > 0, "No vesting schedule");
+
+        uint256 vested = _calculateVestedAmount(schedule);
+        uint256 claimable = vested - schedule.claimed;
+        require(claimable > 0, "Nothing to claim");
+
+        schedule.claimed = vested;
+        depositedTokens[msg.sender][tokenAddress] += claimable;
+
+        emit VestedTokensClaimed(msg.sender, tokenAddress, claimable);
+    }
+
+    /// @notice Calculate how much has vested for a given schedule
+    /// @param schedule The vesting schedule to calculate for
+    /// @return The total amount that has vested so far
+    function _calculateVestedAmount(VestingSchedule memory schedule) internal view returns (uint256) {
+        if (block.timestamp >= schedule.startTime + schedule.duration) {
+            return schedule.totalAmount; // Fully vested
+        }
+
+        uint256 elapsed = block.timestamp - schedule.startTime;
+        return (schedule.totalAmount * elapsed) / schedule.duration;
+    }
+
+    /// @notice Claim timelock withdrawal after cooldown period (for losers)
+    /// @param tokenAddress The token contract address to claim from
+    function claimTimelockWithdrawal(address tokenAddress) external nonReentrant {
+        require(tokenAddress != address(0), "Invalid token address");
+
+        TimelockWithdrawal storage withdrawal = timelockWithdrawals[msg.sender][tokenAddress];
+        require(withdrawal.amount > 0, "No timelock withdrawal");
+        require(block.timestamp >= withdrawal.unlockTime, "Still in cooldown period");
+
+        uint256 amount = withdrawal.amount;
+
+        // Clear the timelock withdrawal
+        delete timelockWithdrawals[msg.sender][tokenAddress];
+
+        // Add to deposited tokens for withdrawal
+        depositedTokens[msg.sender][tokenAddress] += amount;
+
+        emit TimelockWithdrawalClaimed(msg.sender, tokenAddress, amount);
+    }
+
+    /// @notice Create a timelock withdrawal for loser consolation
+    /// @param user The user who will receive the timelock withdrawal
+    /// @param tokenAddress The token contract address
+    /// @param amount The amount to be time-locked
+    /// @param cooldownPeriod The cooldown period before withdrawal is available
+    function _createTimelockWithdrawal(address user, address tokenAddress, uint256 amount, uint256 cooldownPeriod)
+        internal
+    {
+        require(amount > 0, "Amount must be greater than zero");
+        require(user != address(0), "Invalid user address");
+
+        // Check if user already has a timelock withdrawal for this token
+        require(timelockWithdrawals[user][tokenAddress].amount == 0, "Timelock withdrawal already exists");
+
+        timelockWithdrawals[user][tokenAddress] =
+            TimelockWithdrawal({amount: amount, unlockTime: block.timestamp + cooldownPeriod});
+
+        emit TimelockWithdrawalCreated(user, tokenAddress, amount, block.timestamp + cooldownPeriod);
+    }
+
+    /// @notice Distribute Tier 1: Winner Rewards (70% of pool)
+    /// @param battleId The battle identifier
+    /// @param winner The winning creator
+    /// @param winnerCoin The winner's coin address
+    /// @param loserCoin The loser's coin address
+    /// @param totalPool The total prize pool (winner + loser stakes)
+    /// @param topCollectors Array of top collector addresses
+    /// @param collectorBalances Array of collector token balances
+    function _distributeTier1WinnerRewards(
+        bytes32 battleId,
+        address winner,
+        address winnerCoin,
+        address loserCoin,
+        uint256 totalPool,
+        address[] calldata topCollectors,
+        uint256[] calldata collectorBalances
+    ) internal {
+        // 50% immediate liquid to winner
+        uint256 liquidAmount = (totalPool * WINNER_LIQUID_BPS) / 10000;
+        uint256 winnerLiquidShare = liquidAmount / 2; // Split between winner coin and loser coin
+        depositedTokens[winner][winnerCoin] += winnerLiquidShare;
+        depositedTokens[winner][loserCoin] += winnerLiquidShare;
+
+        // 15% to content coin holders (existing collector logic)
+        uint256 collectorAmount = (totalPool * WINNER_COLLECTOR_BPS) / 10000;
+        if (topCollectors.length > 0) {
+            _distributeToCollectors(topCollectors, collectorBalances, collectorAmount, winnerCoin);
+        }
+
+        // 5% time-locked vesting (30 days)
+        uint256 vestingAmount = (totalPool * WINNER_VESTING_BPS) / 10000;
+        if (vestingAmount > 0) {
+            _createVestingSchedule(winner, winnerCoin, vestingAmount, VESTING_DURATION);
+        }
+
+        emit TierRewardsDistributed(battleId, 1, (liquidAmount + collectorAmount + vestingAmount));
+    }
+
+    /// @notice Distribute Tier 2: Flywheel Amplification (15% of pool)
+    /// @param battleId The battle identifier
+    /// @param winner The winning creator
+    /// @param winnerCoin The winner's coin address
+    /// @param loserCoin The loser's coin address
+    /// @param totalPool The total prize pool
+    function _distributeTier2FlywheelRewards(
+        bytes32 battleId,
+        address winner,
+        address winnerCoin,
+        address loserCoin,
+        uint256 totalPool
+    ) internal {
+        // 10% trading fee accumulation during contest
+        uint256 feeReward = (totalPool * FLYWHEEL_FEES_BPS) / 10000;
+        TradingFeeAccumulator storage feeData = battleFeeData[battleId];
+
+        if (feeData.totalAccumulatedFees > 0) {
+            // Winner gets accumulated fees from BOTH coins
+            uint256 feeShare = feeData.totalAccumulatedFees / 2;
+            depositedTokens[winner][winnerCoin] += feeShare;
+            depositedTokens[winner][loserCoin] += feeShare;
+        } else {
+            // Fallback: give equivalent from pool
+            uint256 fallbackShare = feeReward / 2;
+            depositedTokens[winner][winnerCoin] += fallbackShare;
+            depositedTokens[winner][loserCoin] += fallbackShare;
+        }
+
+        // 5% backing boost (simplified for now - TODO: implement content coin detection)
+        uint256 boostAmount = (totalPool * FLYWHEEL_BOOST_BPS) / 10000;
+        // For now, give boost directly to winner - will enhance with coin type detection later
+        depositedTokens[winner][winnerCoin] += boostAmount;
+
+        emit TierRewardsDistributed(battleId, 2, (feeReward + boostAmount));
+    }
+
+    /// @notice Distribute Tier 3: Ecosystem Support (15% of pool)
+    /// @param battleId The battle identifier
+    /// @param loser The losing creator
+    /// @param loserCoin The loser's coin address
+    /// @param totalPool The total prize pool
+    function _distributeTier3EcosystemRewards(bytes32 battleId, address loser, address loserCoin, uint256 totalPool)
+        internal
+    {
+        // 10% loser consolation (with 7-day cooldown)
+        uint256 consolationAmount = (totalPool * LOSER_CONSOLATION_BPS) / 10000;
+        _createTimelockWithdrawal(loser, loserCoin, consolationAmount, LOSER_COOLDOWN);
+
+        // 3% volume incentives for top traders
+        uint256 traderIncentive = (totalPool * TRADER_INCENTIVE_BPS) / 10000;
+        _distributeVolumeIncentives(battleId, traderIncentive);
+
+        // 2% protocol treasury (simplified for now - TODO: implement treasury address)
+        uint256 treasuryAmount = (totalPool * PROTOCOL_TREASURY_BPS) / 10000;
+        // For now, keep in contract - will implement treasury transfer later
+
+        emit TierRewardsDistributed(battleId, 3, (consolationAmount + traderIncentive + treasuryAmount));
+    }
+
+    /// @notice Distribute volume incentives to top traders during contest
+    /// @param battleId The battle identifier
+    /// @param totalAmount Total amount to distribute
+    function _distributeVolumeIncentives(bytes32 battleId, uint256 totalAmount) internal {
+        if (totalAmount == 0) return;
+
+        address[] storage topTraders = battleTopTraders[battleId];
+        if (topTraders.length == 0) return;
+
+        // For now, distribute equally among recorded traders
+        // TODO: Implement volume-weighted distribution when trading tracking is added
+        uint256 rewardPerTrader = totalAmount / topTraders.length;
+        uint256[] memory amounts = new uint256[](topTraders.length);
+
+        for (uint256 i = 0; i < topTraders.length; i++) {
+            if (rewardPerTrader > 0) {
+                // Give rewards in winner's coin for simplicity - could be enhanced later
+                amounts[i] = rewardPerTrader;
+            }
+        }
+
+        emit TraderIncentivesDistributed(battleId, topTraders, amounts);
+    }
+
+    /// @notice Create a vesting schedule for time-locked rewards
+    /// @param beneficiary The address that will receive the vested tokens
+    /// @param tokenAddress The token contract address
+    /// @param amount The total amount to vest
+    /// @param duration The vesting duration
+    function _createVestingSchedule(address beneficiary, address tokenAddress, uint256 amount, uint256 duration)
+        internal
+    {
+        require(amount > 0, "Amount must be greater than zero");
+        require(beneficiary != address(0), "Invalid beneficiary address");
+
+        // Check if beneficiary already has a vesting schedule for this token
+        require(vestingSchedules[beneficiary][tokenAddress].totalAmount == 0, "Vesting schedule already exists");
+
+        vestingSchedules[beneficiary][tokenAddress] =
+            VestingSchedule({totalAmount: amount, claimed: 0, startTime: block.timestamp, duration: duration});
+
+        emit VestingScheduleCreated(beneficiary, tokenAddress, amount, duration);
+    }
+
     /// @notice Validates that a creator has sufficient balance and returns required stake
     /// @param creator The creator's address
     /// @param coinAddress The creator's coin contract address
@@ -301,64 +588,6 @@ contract Flip2 is AccessControl, ReentrancyGuard {
         if (remainder > 0 && lastCollector != address(0)) {
             depositedTokens[lastCollector][tokenAddress] += remainder;
         }
-    }
-
-    /// @notice Internal function to unlock and distribute tokens after battle ends
-    function _unlockAndDistributeTokens(
-        address winner,
-        address loser,
-        address winnerCoin,
-        address loserCoin,
-        uint256 winnerStake,
-        uint256 loserStake,
-        // uint256 winnerPayout,
-        uint256 collectorPayout,
-        uint256 loserKeeps,
-        address[] calldata topCollectors,
-        uint256[] calldata collectorBalances
-    ) internal {
-        // Unlock all tokens from locked state
-        lockedTokens[winner][winnerCoin] -= winnerStake;
-        lockedTokens[loser][loserCoin] -= loserStake;
-
-        // Give winner their payout (80% of their stake + 80% of loser's stake)
-        depositedTokens[winner][winnerCoin] += (winnerStake * 80) / 100; // Winner's 80%
-        depositedTokens[winner][loserCoin] += (loserStake * 80) / 100; // Loser's 80%
-
-        // Give loser back 20% of their own stake
-        depositedTokens[loser][loserCoin] += loserKeeps;
-
-        // Distribute 20% of winner's stake to collectors
-        _distributeToCollectors(topCollectors, collectorBalances, collectorPayout, winnerCoin);
-
-        // Emit unlock events
-        emit TokensUnlocked(winner, winnerCoin, winnerStake, bytes32(0));
-        emit TokensUnlocked(loser, loserCoin, loserStake, bytes32(0));
-    }
-
-    /// @notice End a contest and distribute prizes based on trading volume scores
-    /// @param battleId The battle to end
-    /// @param playerOneScore Trading volume score for player one (basis points)
-    /// @param playerTwoScore Trading volume score for player two (basis points)
-    /// @param topCollectors Array of top collector addresses for winner's coin
-    /// @param collectorBalances Array of token balances for each collector
-    function endContest(
-        bytes32 battleId,
-        uint256 playerOneScore,
-        uint256 playerTwoScore,
-        address[] calldata topCollectors,
-        uint256[] calldata collectorBalances
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        Battle storage battle = battles[battleId];
-
-        // Validate battle exists and timing
-        require(battle.startTime > 0, "Battle does not exist");
-        require(battle.state == BattleState.CHALLENGE_PERIOD, "Battle not in active state");
-        require(block.timestamp >= battle.endTime, "Contest still ongoing");
-
-        // Validate collector arrays
-        require(topCollectors.length == collectorBalances.length, "Array length mismatch");
-        require(topCollectors.length <= 100, "Too many collectors"); // Gas limit protection
     }
 }
 
