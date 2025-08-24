@@ -25,6 +25,12 @@ contract Flip2 is AccessControl, ReentrancyGuard {
     event TokensWithdrawn(address indexed creator, address indexed coinAddress, uint256 amount);
     event TokensLocked(address indexed creator, address indexed coinAddress, uint256 amount, bytes32 battleId);
     event TokensUnlocked(address indexed creator, address indexed coinAddress, uint256 amount, bytes32 battleId);
+    event VestedTokensClaimed(address indexed user, address indexed token, uint256 amount);
+    event VestingScheduleCreated(address indexed user, address indexed token, uint256 amount, uint256 duration);
+    event TimelockWithdrawalCreated(address indexed user, address indexed token, uint256 amount, uint256 unlockTime);
+    event TimelockWithdrawalClaimed(address indexed user, address indexed token, uint256 amount);
+    event TierRewardsDistributed(bytes32 indexed battleId, uint256 tier, uint256 totalAmount);
+    event TraderIncentivesDistributed(bytes32 indexed battleId, address[] traders, uint256[] amounts);
 
     enum BattleState {
         CHALLENGE_PERIOD, // Creators can stake
