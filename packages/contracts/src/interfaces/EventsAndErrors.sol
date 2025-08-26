@@ -71,3 +71,5 @@ event TreasuryWithdrawal(address indexed treasury, address indexed token, uint25
 event EmergencyPause(address indexed admin, string reason);
 
 event EmergencyUnpause(address indexed admin);
+
+event BattleDurationUpdated(uint256 oldDuration, uint256 newDuration);
