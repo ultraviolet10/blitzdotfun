@@ -1,0 +1,59 @@
+{
+    "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+    "formatter": {
+        "enabled": true,
+        "formatWithErrors": false,
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineEnding": "lf",
+        "lineWidth": 120,
+        "attributePosition": "auto"
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "nursery": {
+                "useSortedClasses": "off"
+            },
+            "correctness": {
+                "noUnusedVariables": {
+                    "level": "warn",
+                    "fix": "unsafe"
+                },
+                "useHookAtTopLevel": "error",
+                "noUnusedImports": {
+                    "level": "warn",
+                    "fix": "unsafe"
+                }
+            },
+            "style": {
+                "noNamespace": "error",
+                "noNonNullAssertion": "off",
+                "useTemplate": "off",
+                "noUselessElse": "off",
+                "noParameterAssign": "off"
+            },
+            "complexity": {
+                "noForEach": "off",
+                "noUselessSwitchCase": "off"
+            },
+            "suspicious": {
+                "noConfusingLabels": "off"
+            }
+        }
+    },
+    "javascript": {
+        "formatter": {
+            "jsxQuoteStyle": "double",
+            "quoteProperties": "asNeeded",
+            "trailingCommas": "all",
+            "semicolons": "asNeeded",
+            "arrowParentheses": "always",
+            "bracketSpacing": true,
+            "bracketSameLine": false,
+            "quoteStyle": "double",
+            "attributePosition": "auto"
+        }
+    }
+}

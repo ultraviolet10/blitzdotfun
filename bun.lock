@@ -4,6 +4,7 @@
     "": {
       "name": "run3",
       "devDependencies": {
+        "@biomejs/biome": "^2.2.2",
         "@types/bun": "latest",
         "concurrently": "^8.2.2",
         "node-jq": "^6.0.1",
