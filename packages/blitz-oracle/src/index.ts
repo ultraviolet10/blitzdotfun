@@ -1,9 +1,6 @@
-import { Hono } from 'hono'
+import { app } from "./server/index"
 
-const app = new Hono()
-
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
-
-export default app
+export default {
+    // cf workers define the app port in wrangler.jsonc, so we don't need it here
+    fetch: app.fetch
+}
