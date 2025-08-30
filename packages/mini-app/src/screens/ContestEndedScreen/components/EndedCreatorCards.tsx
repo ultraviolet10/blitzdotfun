@@ -8,8 +8,9 @@ import {
 } from "~/lib/getCreatorCoins";
 import { ProfileData } from "~/types/profile";
 import { useUserAddress } from "~/contexts/UserAddressContext";
+import arrowUp from "../../../../public/arrow_up.svg";
+import arrowDown from "../../../../public/arrow_down.svg";
 
-// Format market cap for display
 const formatMarketCap = (value: string) => {
   const num = parseFloat(value);
   if (num >= 1000000) {
@@ -70,114 +71,185 @@ function EndedCreatorCard({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl p-3 shadow-lg border border-gray-200 animate-pulse">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
-          <div className="flex-1">
-            <div className="h-4 bg-gray-300 rounded mb-1"></div>
-            <div className="h-3 bg-gray-300 rounded w-2/3"></div>
+      <div className="px-4 py-6">
+        <div className="space-y-4 mb-6">
+          <div
+            className="border rounded-2xl p-4 animate-pulse"
+            style={{
+              background: "rgba(166, 236, 156, 0.1)",
+              borderColor: "#A6EC9C",
+            }}
+          >
+            <div
+              className="h-20 rounded"
+              style={{ background: "rgba(184, 239, 146, 0.2)" }}
+            ></div>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          <div className="bg-gray-100 rounded-lg p-2 h-12"></div>
-          <div className="bg-gray-100 rounded-lg p-2 h-12"></div>
-          <div className="bg-gray-100 rounded-lg p-2 h-12"></div>
-        </div>
-        <div className="h-10 bg-gray-300 rounded-full"></div>
       </div>
     );
   }
 
   if (error || !creator?.profile) {
     return (
-      <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-200 text-center">
-        <p className="text-red-600 text-sm">
-          {error || "Failed to load creator data"}
-        </p>
+      <div className="px-4 py-6">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold mb-2" style={{ color: "#124D04" }}>
+            Creator Battle Ended
+          </h2>
+          <div
+            className="border border-red-300 rounded-lg p-3"
+            style={{ background: "rgba(252, 165, 165, 0.1)" }}
+          >
+            <p
+              className="text-sm font-schibsted-grotesk"
+              style={{ color: "#B91C1C" }}
+            >
+              {error || "Failed to load creator data"}
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
-
-  const avatar = creator?.profile?.avatar?.medium || "/api/placeholder/80/80";
-  const name =
-    creator?.profile?.displayName || creator?.profile?.handle || "Unknown";
-  const handle = creator?.profile?.handle
-    ? `@${creator.profile.handle}`
-    : "@unknown";
 
   const latestCoin = coinsData?.profile?.createdCoins?.edges?.[0]?.node;
   const marketCap = latestCoin?.marketCap || "245000000";
   const volume = parseFloat(latestCoin?.totalVolume || "1683").toFixed(0);
   const holders = latestCoin?.uniqueHolders?.toString() || "4";
 
-  const scoreColor = isWinner ? "text-green-500" : "text-pink-500";
-  const scoreBg = isWinner ? "bg-green-100" : "bg-pink-100";
-  const borderColor = isWinner ? "border-green-200" : "border-pink-200";
-
   return (
-    <div
-      className={`bg-white rounded-2xl p-3 shadow-lg border-2 ${borderColor}`}
-    >
-      {/* Profile Section */}
-      <div className="flex items-center space-x-3 mb-3">
-        <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center overflow-hidden">
-          <img
-            src={avatar}
-            alt={name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = "none";
-              target.parentElement!.innerHTML =
-                '<div class="text-white text-xs">IMG</div>';
+    <div className="rounded-2xl p-[6px] mx-3 mb-2 relative select-none">
+      <div
+        className="absolute inset-0 rounded-2xl z-0"
+        style={{
+          background:
+            "linear-gradient(22deg, #B0B0B0 0%, #C3C3C3 15%, #DCDCDC 30%, #FDFEFE 50%, #DCDCDC 70%, #C3C3C3 85%, #B0B0B0 100%)",
+        }}
+      />
+      <div
+        className="relative z-10 rounded-2xl overflow-hidden p-3"
+        style={{ backgroundColor: "#F2F3F3" }}
+      >
+        <div className="min-h-[120px]">
+          <div className="flex items-center space-x-2 mb-3">
+            <div className="w-16 h-16 rounded-full p-[4px] relative flex-shrink-0">
+              <div
+                className="absolute inset-0 rounded-full z-0"
+                style={{
+                  background:
+                    "linear-gradient(0deg, #B0B0B0 0%, #C3C3C3 15%, #DCDCDC 30%, #FDFEFE 50%, #DCDCDC 70%, #C3C3C3 85%, #B0B0B0 100%)",
+                }}
+              />
+              <div className="relative z-10 rounded-full overflow-hidden w-full h-full bg-white p-[2px]">
+                <div className="rounded-full overflow-hidden w-full h-full bg-black">
+                  <img
+                    src={
+                      creator.profile?.avatar?.medium ||
+                      creator.profile?.avatar?.small ||
+                      "https://api.dicebear.com/7.x/avataaars/svg?seed=default"
+                    }
+                    alt={creator.profile?.displayName}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <h3 className="font-schibsted-grotesk font-semibold text-black">
+                {creator.profile?.displayName || "Creator"}
+              </h3>
+              <p className="font-schibsted-grotesk text-black opacity-80 text-xs mb-1 truncate">
+                @{creator.profile?.handle || "creator"}
+              </p>
+            </div>
+          </div>
+
+          <div className="w-full mb-3">
+            <div className="grid grid-cols-3 gap-2 mb-2 w-full">
+              <div className="relative p-[1px] rounded-lg">
+                <div
+                  className="absolute inset-0 rounded-lg z-0"
+                  style={{
+                    background:
+                      "linear-gradient(11deg, #B0B0B0 0%, #C3C3C3 15%, #DCDCDC 30%, #FDFEFE 50%, #DCDCDC 70%, #C3C3C3 85%, #B0B0B0 100%)",
+                  }}
+                />
+                <div className="relative z-10 bg-white rounded-lg p-2 h-full">
+                  <span className="font-schibsted-grotesk text-xs text-gray-500 font-medium block mb-1">
+                    Market Cap
+                  </span>
+                  <div className="flex items-center space-x-0.5">
+                    {marketCap.includes("-") ? (
+                      <img src={arrowDown.src} alt="arrow-down" />
+                    ) : (
+                      <img src={arrowUp.src} alt="arrow-up" />
+                    )}
+                    <span
+                      className="font-nunito text-sm font-bold"
+                      style={{
+                        color: marketCap.includes("-") ? "#E71CEC" : "#06BE16",
+                      }}
+                    >
+                      {formatMarketCap(marketCap)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative p-[1px] rounded-lg">
+                <div
+                  className="absolute inset-0 rounded-lg z-0"
+                  style={{
+                    background:
+                      "linear-gradient(11deg, #B0B0B0 0%, #C3C3C3 15%, #DCDCDC 30%, #FDFEFE 50%, #DCDCDC 70%, #C3C3C3 85%, #B0B0B0 100%)",
+                  }}
+                />
+                <div className="relative z-10 bg-white rounded-lg p-2 h-full">
+                  <span className="font-schibsted-grotesk text-xs text-gray-500 font-medium block mb-1">
+                    Volume
+                  </span>
+                  <div className="flex items-center space-x-0.5">
+                    <span className="font-nunito text-sm font-bold text-black">
+                      ${parseFloat(volume).toFixed(0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative p-[1px] rounded-lg">
+                <div
+                  className="absolute inset-0 rounded-lg z-0"
+                  style={{
+                    background:
+                      "linear-gradient(11deg, #B0B0B0 0%, #C3C3C3 15%, #DCDCDC 30%, #FDFEFE 50%, #DCDCDC 70%, #C3C3C3 85%, #B0B0B0 100%)",
+                  }}
+                />
+                <div className="relative z-10 bg-white rounded-lg p-2 h-full">
+                  <span className="font-schibsted-grotesk text-xs text-gray-500 font-medium block mb-1">
+                    Holders
+                  </span>
+                  <div className="flex items-center space-x-0.5">
+                    <span className="font-nunito text-sm font-bold text-black">
+                      {holders}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="font-schibsted-grotesk text-black px-5 py-2 text-md font-medium rounded-xl w-full text-center"
+            style={{
+              background: isWinner
+                ? "linear-gradient(to right, #A6EC9C 0%, #B8EF92 100%)"
+                : "linear-gradient(to right, #EB9CEC 0%, #ED92EF 100%)",
             }}
-          />
-        </div>
-
-        <div className="flex-1">
-          <h3 className="text-base font-bold text-black mb-0.5">{name}</h3>
-          <p className="text-gray-500 text-xs">{handle}</p>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-1.5 mb-3">
-        <div className="bg-gray-50 rounded-lg p-2 text-center">
-          <p className="text-xs text-gray-400 mb-1">Market Cap</p>
-          <div className="flex items-center justify-center space-x-0.5">
-            <span
-              className={`text-xs ${
-                isWinner ? "text-green-500" : "text-pink-500"
-              }`}
-            >
-              {isWinner ? "▲" : "▼"}
-            </span>
-            <span
-              className={`text-xs font-bold ${
-                isWinner ? "text-green-500" : "text-pink-500"
-              }`}
-            >
-              {formatMarketCap(marketCap)}
-            </span>
+          >
+            Final Score : {finalScore}
           </div>
         </div>
-
-        <div className="bg-gray-50 rounded-lg p-2 text-center">
-          <p className="text-xs text-gray-400 mb-1">Volume</p>
-          <span className="text-xs font-bold text-black">${volume}</span>
-        </div>
-
-        <div className="bg-gray-50 rounded-lg p-2 text-center">
-          <p className="text-xs text-gray-400 mb-1">Holders</p>
-          <span className="text-xs font-bold text-black">{holders}</span>
-        </div>
-      </div>
-
-      {/* Final Score */}
-      <div className={`${scoreBg} rounded-lg p-2.5 text-center`}>
-        <span className={`text-sm font-bold ${scoreColor}`}>
-          Final Score : {finalScore}
-        </span>
       </div>
     </div>
   );
@@ -186,21 +258,18 @@ function EndedCreatorCard({
 export function EndedCreatorCards() {
   const { userAddress } = useUserAddress();
 
-  // Mock second creator address and scores
   const SECOND_CREATOR_ADDRESS = "0x58f19e55058057b04feae2eea88f90b84b7714eb";
   const WINNER_SCORE = 91;
   const LOSER_SCORE = 80;
 
   return (
-    <div className="space-y-4">
-      {/* Winner Card */}
+    <div className="space-y-6">
       <EndedCreatorCard
         creatorAddress={userAddress || ""}
         isWinner={true}
         finalScore={WINNER_SCORE}
       />
 
-      {/* Loser Card */}
       <EndedCreatorCard
         creatorAddress={SECOND_CREATOR_ADDRESS}
         isWinner={false}

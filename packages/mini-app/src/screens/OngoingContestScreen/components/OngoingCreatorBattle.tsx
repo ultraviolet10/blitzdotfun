@@ -8,25 +8,10 @@ import {
 } from "~/lib/getCreatorCoins";
 import { ProfileData } from "~/types/profile";
 import { useUserAddress } from "~/contexts/UserAddressContext";
-// Lightning icon for separator
-const LightningIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="currentColor" />
-  </svg>
-);
+import lightningIcon from "../../../../public/logo.svg";
+import { CreatorPostCard } from "./CreatorPostCard";
+import { PostData } from "./CreatorPostCard";
 
-// Format market cap for display
-const formatMarketCap = (value: string) => {
-  const num = parseFloat(value);
-  if (num >= 1000000) {
-    return `$${(num / 1000000).toFixed(0)}M`;
-  } else if (num >= 1000) {
-    return `$${(num / 1000).toFixed(0)}K`;
-  }
-  return `$${num.toFixed(0)}`;
-};
-
-// Helper function to get post data from coins
 const getPostDataFromCoins = (coinsData: ProfileCoinsData | null) => {
   if (!coinsData?.profile?.createdCoins?.edges?.length) {
     return {
@@ -39,6 +24,7 @@ const getPostDataFromCoins = (coinsData: ProfileCoinsData | null) => {
   }
 
   const latestCoin = coinsData.profile.createdCoins.edges[0].node;
+
   return {
     image:
       latestCoin?.mediaContent?.previewImage?.medium ||
@@ -47,15 +33,13 @@ const getPostDataFromCoins = (coinsData: ProfileCoinsData | null) => {
     address: latestCoin?.address,
     name: latestCoin?.name || "Latest Collection",
     description: latestCoin?.description || "Check out this amazing new drop!",
+    marketCap: latestCoin?.marketCap || "0",
+    volume: latestCoin?.totalVolume || "0",
+    holders: latestCoin?.uniqueHolders || "0",
   };
 };
 
-type CreatorCardProps = {
-  creatorAddress: string;
-  _isFirst: boolean;
-};
-
-function CreatorCard({ creatorAddress, _isFirst }: CreatorCardProps) {
+function CreatorCard({ creatorAddress }: { creatorAddress: string }) {
   const { userAddress } = useUserAddress();
   const [creator, setCreator] = useState<ProfileData | null>(null);
   const [coinsData, setCoinsData] = useState<ProfileCoinsData | null>(null);
@@ -95,159 +79,67 @@ function CreatorCard({ creatorAddress, _isFirst }: CreatorCardProps) {
     loadCreatorData();
   }, [creatorAddress, userAddress]);
 
-  const handleBuyOnZora = () => {
-    if (creator?.profile?.handle) {
-      window.open(
-        `https://zora.co/coin/base:${postData.address}`,
-        "_blank",
-        "noopener,noreferrer"
-      );
-    }
-  };
-
   if (loading) {
     return (
-      <div className="bg-gray-100 rounded-3xl p-6 animate-pulse">
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
-          <div className="flex-1">
-            <div className="h-6 bg-gray-300 rounded mb-2"></div>
-            <div className="h-4 bg-gray-300 rounded w-2/3"></div>
-          </div>
+      <div className="px-4 py-6">
+        <div
+          className="border rounded-2xl p-4 animate-pulse"
+          style={{
+            background: "rgba(166, 236, 156, 0.1)",
+            borderColor: "#A6EC9C",
+          }}
+        >
+          <div
+            className="h-20 rounded"
+            style={{ background: "rgba(184, 239, 146, 0.2)" }}
+          ></div>
         </div>
-        <div className="h-6 bg-gray-300 rounded mb-6"></div>
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-white rounded-2xl p-4 h-20"></div>
-          <div className="bg-white rounded-2xl p-4 h-20"></div>
-          <div className="bg-white rounded-2xl p-4 h-20"></div>
-        </div>
-        <div className="h-12 bg-lime-300 rounded-full"></div>
       </div>
     );
   }
 
   if (error || !creator?.profile) {
     return (
-      <div className="bg-gray-100 rounded-3xl p-6 text-center">
-        <p className="text-red-600 text-sm">
-          {error || "Failed to load creator data"}
-        </p>
+      <div className="px-4 py-6">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold mb-2" style={{ color: "#124D04" }}>
+            Creator Battle
+          </h2>
+        </div>
+        <div
+          className="border rounded-2xl p-4 text-center"
+          style={{
+            background: "rgba(255, 200, 200, 0.1)",
+            borderColor: "#ffcccc",
+          }}
+        >
+          <p className="text-red-600 text-sm">
+            {error || "Failed to load creator data"}
+          </p>
+        </div>
       </div>
     );
   }
 
-  const avatar = creator?.profile?.avatar?.medium || "/api/placeholder/80/80";
-  const name =
-    creator?.profile?.displayName || creator?.profile?.handle || "Unknown";
-  const handle = creator?.profile?.handle
-    ? `@${creator.profile.handle}`
-    : "@unknown";
-
-  const latestCoin = coinsData?.profile?.createdCoins?.edges?.[0]?.node;
-  const marketCap = latestCoin?.marketCap || "245000000";
-  const volume = parseFloat(latestCoin?.totalVolume || "1683").toFixed(0);
-  const holders = latestCoin?.uniqueHolders?.toString() || "4";
-
-  return (
-    <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-200">
-      {/* Profile Section */}
-      <div className="flex items-center space-x-3 mb-4">
-        <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center overflow-hidden">
-          <img
-            src={avatar}
-            alt={name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = "none";
-              target.parentElement!.innerHTML =
-                '<div class="text-white text-xs">IMG</div>';
-            }}
-          />
-        </div>
-
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-black mb-0.5">{name}</h3>
-          <p className="text-gray-500 text-sm">{handle}</p>
-        </div>
-      </div>
-
-      {/* Post Section - Image and Title */}
-      <div className="flex items-start space-x-3 mb-4">
-        <div className="w-20 h-20 bg-black rounded-xl overflow-hidden flex-shrink-0">
-          <img
-            src={postData.image}
-            alt="Post content"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = "none";
-              target.parentElement!.innerHTML =
-                '<div class="text-white text-xs flex items-center justify-center h-full">POST</div>';
-            }}
-          />
-        </div>
-
-        <div className="flex-1 flex items-center">
-          <h4 className="text-lg font-bold text-black leading-tight">{postData.name}</h4>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <p className="text-xs text-gray-400 mb-1">Market Cap</p>
-          <div className="flex items-center justify-center space-x-1">
-            <span className="text-green-500 text-sm">▲</span>
-            <span className="text-lg font-bold text-green-500">
-              {formatMarketCap(marketCap)}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <p className="text-xs text-gray-400 mb-1">Volume</p>
-          <span className="text-lg font-bold text-black">${volume}</span>
-        </div>
-
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <p className="text-xs text-gray-400 mb-1">Holders</p>
-          <span className="text-lg font-bold text-black">{holders}</span>
-        </div>
-      </div>
-
-      {/* Buy Button */}
-      <button
-        onClick={handleBuyOnZora}
-        className="w-full bg-lime-400 text-black font-semibold py-3 rounded-full text-base hover:bg-lime-300 transition-colors"
-      >
-        Buy on Zora
-      </button>
-    </div>
-  );
+  return <CreatorPostCard creator={creator} postData={postData as PostData} />;
 }
 
 export function OngoingCreatorBattle() {
   const { userAddress } = useUserAddress();
 
-  // Mock second creator address - in real app this would come from contest data
   const SECOND_CREATOR_ADDRESS = "0x58f19e55058057b04feae2eea88f90b84b7714eb";
 
   return (
-    <div className="px-4 space-y-2">
-      {/* First Creator Card */}
-      <CreatorCard creatorAddress={userAddress || ""} _isFirst={true} />
+    <div className="py-4">
+      <CreatorCard creatorAddress={userAddress || ""} />
 
-      <div className="flex items-center justify-center">
-        <div className="w-12 h-12 bg-lime-400 rounded-full flex items-center justify-center shadow-lg">
-          <div className="text-black">
-            <LightningIcon />
-          </div>
+      <div className="flex items-center justify-center pb-2">
+        <div className="w-14 h-14 rounded-full flex items-center justify-center">
+          <img src={lightningIcon.src} alt="lightning" />
         </div>
       </div>
 
-      {/* Second Creator Card */}
-      <CreatorCard creatorAddress={SECOND_CREATOR_ADDRESS} _isFirst={false} />
+      <CreatorCard creatorAddress={SECOND_CREATOR_ADDRESS} />
     </div>
   );
 }

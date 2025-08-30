@@ -1,16 +1,9 @@
 "use client";
 
 import { CreatorBattle } from "./components/CreatorBattle";
-import { ContestTimer } from "./components/ContestTimer";
-import { FlipHeader } from "./components/FlipHeader";
-import { CoinComparison } from "./components/CoinComparison";
-import {
-  UserAddressProvider,
-  useUserAddress,
-} from "~/contexts/UserAddressContext";
-
-// Creator addresses
-const KISMET_ADDRESS = "0x91169bfa46481ba2b0db01bfdfd3d5be3d3dceb8";
+import { UserAddressProvider } from "~/contexts/UserAddressContext";
+import { FlipHeader } from "~/components/shared/FlipHeader";
+import { ContestTimer } from "~/components/shared/ContestTimer";
 
 type PreContestScreenProps = {
   onNavigateToOngoing?: () => void;
@@ -19,29 +12,20 @@ type PreContestScreenProps = {
 function PreContestScreenContent({
   onNavigateToOngoing,
 }: PreContestScreenProps) {
-  const { zoraProfileAddress } = useUserAddress();
-
-  // Mock contest start time - 2 hours from now
   const contestStartTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
 
-  // Contest start timestamp (24 hours ago for comparison purposes)
-  const startTimestamp = Math.floor(Date.now() / 1000) - 24 * 60 * 60;
-
   return (
-    <div className="min-h-screen bg-gray-50 pb-safe">
-      {/* Header */}
+    <div className="min-h-screen bg-white pb-safe">
       <FlipHeader />
 
-      {/* Countdown Timer */}
       <div className="px-3 py-2">
-        <ContestTimer contestStartTime={contestStartTime} />
+        <ContestTimer time={contestStartTime} isStart />
       </div>
 
-      {/* Main Content */}
       <div className="pb-3">
         <CreatorBattle />
 
-        {/* Testing Navigation Button */}
+        {/* //TODO: Shall be removed in production - @kshitij-hash */}
         {onNavigateToOngoing && (
           <div className="px-3 py-4">
             <button

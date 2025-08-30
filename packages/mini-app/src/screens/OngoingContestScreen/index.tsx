@@ -1,36 +1,32 @@
 "use client";
 
-import { FlipHeader } from "../PreContestScreen/components/FlipHeader";
-import { ContestTimer } from "./components/ContestTimer";
 import { UserAddressProvider } from "~/contexts/UserAddressContext";
 import { OngoingCreatorBattle } from "./components/OngoingCreatorBattle";
+import { FlipHeader } from "~/components/shared/FlipHeader";
+import { ContestTimer } from "~/components/shared/ContestTimer";
 
 type OngoingContestScreenProps = {
   onNavigateToPreContest?: () => void;
   onNavigateToEnded?: () => void;
 };
 
-const _KISMET_ADDRESS = "0x58f19e55058057b04feae2eea88f90b84b7714eb";
-
-function OngoingContestScreenContent({ onNavigateToEnded }: OngoingContestScreenProps) {
-  // Mock contest end time - 1 hour from now
+function OngoingContestScreenContent({
+  onNavigateToEnded,
+}: OngoingContestScreenProps) {
   const contestEndTime = new Date(Date.now() + 1 * 60 * 60 * 1000);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-safe">
-      {/* Header */}
+    <div className="min-h-screen bg-white pb-safe">
       <FlipHeader />
 
-      {/* Countdown Timer */}
       <div className="px-3 py-2">
-        <ContestTimer contestEndTime={contestEndTime} />
+        <ContestTimer time={contestEndTime} isStart={false} />
       </div>
 
-      {/* Main Content */}
       <div className="pb-3">
         <OngoingCreatorBattle />
 
-        {/* Testing Navigation Button */}
+        {/* //TODO: Shall be removed in production - @kshitij-hash */}
         {onNavigateToEnded && (
           <div className="px-3 py-4">
             <button

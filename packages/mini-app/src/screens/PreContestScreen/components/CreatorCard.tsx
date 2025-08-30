@@ -2,45 +2,13 @@
 
 import { useState, useRef } from "react";
 import { ProfileData } from "~/types/profile";
+import arrowUp from "../../../../public/arrow_up.svg";
+import arrowUpRight from "../../../../public/arrow_up_right.svg";
 
 type CreatorCardProps = {
   creator: ProfileData;
 };
 
-// Up Triangle Icon Component
-const UpTriangleIcon = () => (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 12 12"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M6 3L10 9H2L6 3Z" fill="#22c55e" />
-  </svg>
-);
-
-// Green Arrow Icon Component
-const GreenArrowIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M4 6L8 10L12 6"
-      stroke="#22c55e"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      transform="rotate(-90 8 8)"
-    />
-  </svg>
-);
-
-// Mock top holders data - in a real app this would come from the API
 const mockTopHolders = [
   { id: 1, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1" },
   { id: 2, avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2" },
@@ -117,92 +85,117 @@ export function CreatorCard({ creator }: CreatorCardProps) {
 
   if (!creator.profile) return null;
 
-  // Use real data from Zora profile or fallback values
   const marketCap = creator.profile.creatorCoin?.marketCap || "0";
 
-  // Format market cap for display
   const formatMarketCap = (value: string) => {
     const num = parseFloat(value);
     if (num >= 1000000) {
-      return `$${(num / 1000000).toFixed(0)} M`;
+      return `$ ${(num / 1000000).toFixed(0)} M`;
     } else if (num >= 1000) {
-      return `$${(num / 1000).toFixed(0)} K`;
+      return `$ ${(num / 1000).toFixed(0)} K`;
     }
-    return `$${num.toFixed(0)}`;
+    return `$ ${num.toFixed(0)}`;
   };
 
   const renderPage1 = () => (
     <>
-      {/* Profile Section */}
-      <div className="flex items-start space-x-2 mb-3">
-        <div className="w-12 h-12 rounded-full border-2 border-gray-200 overflow-hidden flex-shrink-0">
-          <img
-            src={
-              creator.profile?.avatar?.medium ||
-              creator.profile?.avatar?.small ||
-              "https://api.dicebear.com/7.x/avataaars/svg?seed=default"
-            }
-            alt={creator.profile?.displayName}
-            className="w-full h-full object-cover"
+      <div className="flex items-center space-x-2 mb-3">
+        <div className="w-24 h-24 rounded-full p-[6px] relative flex-shrink-0">
+          <div
+            className="absolute inset-0 rounded-full z-0"
+            style={{
+              background:
+                "linear-gradient(0deg, #B0B0B0 0%, #C3C3C3 15%, #DCDCDC 30%, #FDFEFE 50%, #DCDCDC 70%, #C3C3C3 85%, #B0B0B0 100%)",
+            }}
           />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-1 mb-0.5">
-            <h3 className="font-bold text-black text-base truncate">
-              {creator.profile?.displayName || "Creator"}
-            </h3>
-            <button
-              onClick={handleCardClick}
-              className="hover:scale-110 transition-transform"
-            >
-              <GreenArrowIcon />
-            </button>
+          <div className="relative z-10 rounded-full overflow-hidden w-full h-full bg-white p-[4px]">
+            <div className="rounded-full overflow-hidden w-full h-full bg-black">
+              <img
+                src={
+                  creator.profile?.avatar?.medium ||
+                  creator.profile?.avatar?.small ||
+                  "https://api.dicebear.com/7.x/avataaars/svg?seed=default"
+                }
+                alt={creator.profile?.displayName}
+                className="w-full h-full object-cover"
+              />
+            </div>
           </div>
-          <p className="text-gray-600 text-xs mb-1 truncate">
-            @{creator.profile?.handle || "creator"}
+        </div>
+        <div className="flex flex-col gap-2">
+          <div>
+            <div className="flex items-center space-x-1 mb-0.5">
+              <h3 className="font-schibsted-grotesk font-semibold text-black">
+                {creator.profile?.displayName || "Creator"}
+              </h3>
+              <button onClick={handleCardClick}>
+                <img src={arrowUpRight.src} alt="arrow-up-right" />
+              </button>
+            </div>
+            <p className="font-schibsted-grotesk text-black opacity-80 text-xs mb-1 truncate">
+              @{creator.profile?.handle || "creator"}
+            </p>
+          </div>
+          <p className="font-schibsted-grotesk text-black opacity-80 text-xs mb-1 truncate">
+            {creator.profile?.bio || ""}
           </p>
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-2 mb-2">
-        {/* Market Cap */}
-        <div className="bg-gray-50 rounded-lg p-2">
-          <span className="text-xs text-gray-500 font-medium block mb-1">
-            Market Cap
-          </span>
-          <div className="flex items-center space-x-0.5">
-            <UpTriangleIcon />
-            <span className="text-sm font-bold text-green-500">
-              {formatMarketCap(marketCap)}
+        <div className="relative p-[1px] rounded-lg">
+          <div
+            className="absolute inset-0 rounded-lg z-0"
+            style={{
+              background:
+                "linear-gradient(11deg, #B0B0B0 0%, #C3C3C3 15%, #DCDCDC 30%, #FDFEFE 50%, #DCDCDC 70%, #C3C3C3 85%, #B0B0B0 100%)",
+            }}
+          />
+          <div className="relative z-10 bg-white rounded-lg p-2">
+            <span className="font-schibsted-grotesk text-xs text-gray-500 font-medium block mb-1">
+              Market Cap
             </span>
+            <div className="flex items-center space-x-0.5">
+              <img src={arrowUp.src} alt="arrow-up" />
+              <span className="font-nunito text-sm font-bold text-green-500">
+                {formatMarketCap(marketCap)}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Top Holders */}
-        <div className="bg-gray-50 rounded-lg p-2">
-          <span className="text-xs text-gray-500 font-medium block mb-1">
-            Top Holders
-          </span>
-          <div className="flex -space-x-0.5">
-            {mockTopHolders.map((holder, index) => (
-              <img
-                key={holder.id}
-                src={holder.avatar}
-                alt={`Holder ${holder.id}`}
-                className="w-5 h-5 rounded-full border-1 border-white"
-                style={{ zIndex: mockTopHolders.length - index }}
-              />
-            ))}
+        <div className="relative p-[1px] rounded-lg">
+          <div
+            className="absolute inset-0 rounded-lg z-0"
+            style={{
+              background:
+                "linear-gradient(11deg, #B0B0B0 0%, #C3C3C3 15%, #DCDCDC 30%, #FDFEFE 50%, #DCDCDC 70%, #C3C3C3 85%, #B0B0B0 100%)",
+            }}
+          />
+          <div className="relative z-10 bg-white rounded-lg p-2">
+            <span className="font-schibsted-grotesk text-xs text-gray-500 font-medium block mb-1">
+              Top Holders
+            </span>
+            <div className="flex space-x-1">
+              {mockTopHolders.map((holder, index) => (
+                <img
+                  key={holder.id}
+                  src={holder.avatar}
+                  alt={`Holder ${holder.id}`}
+                  className="w-5 h-5 rounded-full"
+                  style={{ zIndex: mockTopHolders.length - index }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
     </>
   );
 
+  // TODO: content and UI changes required for this @kshitij-hash
   const renderPage2 = () => (
     <>
-      {/* Profile Section - Simplified */}
       <div className="flex items-center space-x-2 mb-3">
         <div className="w-10 h-10 rounded-full border-2 border-gray-200 overflow-hidden flex-shrink-0">
           <img
@@ -223,9 +216,7 @@ export function CreatorCard({ creator }: CreatorCardProps) {
         </div>
       </div>
 
-      {/* Battle Stats Grid */}
       <div className="grid grid-cols-2 gap-2 mb-2">
-        {/* Total Trades */}
         <div className="bg-gray-50 rounded-lg p-2">
           <span className="text-xs text-gray-500 font-medium block mb-1">
             Total Trades
@@ -233,7 +224,6 @@ export function CreatorCard({ creator }: CreatorCardProps) {
           <span className="text-sm font-bold text-blue-500">1,247</span>
         </div>
 
-        {/* Volume */}
         <div className="bg-gray-50 rounded-lg p-2">
           <span className="text-xs text-gray-500 font-medium block mb-1">
             24h Volume
@@ -241,7 +231,6 @@ export function CreatorCard({ creator }: CreatorCardProps) {
           <span className="text-sm font-bold text-purple-500">$12.4K</span>
         </div>
 
-        {/* Supporters */}
         <div className="bg-gray-50 rounded-lg p-2">
           <span className="text-xs text-gray-500 font-medium block mb-1">
             Supporters
@@ -249,7 +238,6 @@ export function CreatorCard({ creator }: CreatorCardProps) {
           <span className="text-sm font-bold text-orange-500">89</span>
         </div>
 
-        {/* Win Rate */}
         <div className="bg-gray-50 rounded-lg p-2">
           <span className="text-xs text-gray-500 font-medium block mb-1">
             Win Rate
@@ -263,43 +251,57 @@ export function CreatorCard({ creator }: CreatorCardProps) {
   return (
     <div
       ref={cardRef}
-      className="bg-white rounded-2xl p-3 shadow-lg hover:shadow-xl transition-all relative mx-3 mb-2 border border-gray-200 select-none"
+      className="rounded-2xl p-[6px] mx-3 mb-2 relative select-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      style={{
-        clipPath: "polygon(20px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 20px)",
-        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-      }}
     >
-      {/* Card Content */}
-      <div className="min-h-[120px]">
-        {currentPage === 0 ? renderPage1() : renderPage2()}
-      </div>
+      <div
+        className="absolute inset-0 rounded-2xl z-0"
+        style={{
+          background:
+            "linear-gradient(22deg, #B0B0B0 0%, #C3C3C3 15%, #DCDCDC 30%, #FDFEFE 50%, #DCDCDC 70%, #C3C3C3 85%, #B0B0B0 100%)",
+        }}
+      />
+      <div
+        className="relative z-10 rounded-2xl overflow-hidden p-3"
+        style={{ backgroundColor: "#F2F3F3" }}
+      >
+        <div className="min-h-[120px]">
+          {currentPage === 0 ? renderPage1() : renderPage2()}
+        </div>
 
-      {/* Pagination Dots */}
-      <div className="flex justify-center space-x-1.5">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setCurrentPage(0);
-          }}
-          className={`w-1.5 h-1.5 rounded-full transition-colors ${
-            currentPage === 0 ? "bg-lime-400" : "bg-gray-300"
-          }`}
-        />
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setCurrentPage(1);
-          }}
-          className={`w-1.5 h-1.5 rounded-full transition-colors ${
-            currentPage === 1 ? "bg-lime-400" : "bg-gray-300"
-          }`}
-        />
+        <div className="flex justify-center space-x-1.5 items-center">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentPage(0);
+            }}
+            className={`rounded-full transition-all ${
+              currentPage === 0 ? "w-3.5 h-1.5" : "w-1.5 h-1.5"
+            }`}
+            style={{
+              backgroundColor:
+                currentPage === 0 ? "#838383" : "rgba(0,0,0,0.2)",
+            }}
+          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentPage(1);
+            }}
+            className={`rounded-full transition-all ${
+              currentPage === 1 ? "w-3.5 h-1.5" : "w-1.5 h-1.5"
+            }`}
+            style={{
+              backgroundColor:
+                currentPage === 1 ? "#838383" : "rgba(0,0,0,0.2)",
+            }}
+          />
+        </div>
       </div>
     </div>
   );

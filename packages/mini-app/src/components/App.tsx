@@ -29,7 +29,7 @@ type ScreenType = "pre-contest" | "ongoing-contest" | "contest-ended";
  * @param props.title - Optional title for the mini app (defaults to "Flip")
  */
 export default function App(
-  { title: _title }: AppProps = { title: "Flip" }
+  { title: _title }: AppProps = { title: "Blitz" }
 ) {
   // --- Hooks ---
   const { isSDKLoaded, context } = useMiniApp();
@@ -42,7 +42,7 @@ export default function App(
       <div className="flex items-center justify-center h-screen bg-black">
         <div className="text-center">
           <div className="w-8 h-8 mx-auto mb-4 border-4 border-gray-800 border-t-green-500 rounded-full animate-spin"></div>
-          <p className="text-gray-400">Loading Flip...</p>
+          <p className="text-gray-400">Loading Blitz...</p>
         </div>
       </div>
     );

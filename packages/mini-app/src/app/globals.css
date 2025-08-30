@@ -27,7 +27,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-syne: 'Syne', sans-serif;
+  --font-syne: "Syne", sans-serif;
+  --font-nunito: "Nunito", sans-serif;
+  --font-dela-gothic-one: "Dela Gothic One", sans-serif;
+  --font-schibsted-grotesk: "Schibsted Grotesk", sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,7 +43,8 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-syne), Helvetica, Arial, sans-serif;
+  font-family: var(--font-syne), var(--font-nunito), var(--font-dela-gothic-one),
+    var(--font-schibsted-grotesk), Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -56,7 +60,7 @@ body {
   :root {
     --radius: 0.5rem;
   }
-  
+
   /* Syne font utility classes */
   .syne-400 {
     font-family: var(--font-syne);
@@ -64,28 +68,28 @@ body {
     font-weight: 400;
     font-style: normal;
   }
-  
+
   .syne-500 {
     font-family: var(--font-syne);
     font-optical-sizing: auto;
     font-weight: 500;
     font-style: normal;
   }
-  
+
   .syne-600 {
     font-family: var(--font-syne);
     font-optical-sizing: auto;
     font-weight: 600;
     font-style: normal;
   }
-  
+
   .syne-700 {
     font-family: var(--font-syne);
     font-optical-sizing: auto;
     font-weight: 700;
     font-style: normal;
   }
-  
+
   .syne-800 {
     font-family: var(--font-syne);
     font-optical-sizing: auto;
@@ -99,11 +103,11 @@ body {
   .container {
     @apply mx-auto max-w-md px-4;
   }
-  
+
   .container-wide {
     @apply mx-auto max-w-lg px-4;
   }
-  
+
   .container-narrow {
     @apply mx-auto max-w-sm px-4;
   }
@@ -112,7 +116,7 @@ body {
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm;
   }
-  
+
   .card-primary {
     @apply bg-primary/10 border-primary/20;
   }
@@ -121,15 +125,15 @@ body {
   .btn {
     @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
   }
-  
+
   .btn-primary {
     @apply bg-primary text-white hover:bg-primary-dark focus:ring-primary;
   }
-  
+
   .btn-secondary {
     @apply bg-secondary text-gray-900 hover:bg-gray-200 focus:ring-gray-500 dark:bg-secondary-dark dark:text-gray-100 dark:hover:bg-gray-600;
   }
-  
+
   .btn-outline {
     @apply border border-gray-300 bg-transparent hover:bg-gray-50 focus:ring-gray-500 dark:border-gray-600 dark:hover:bg-gray-800;
   }
@@ -143,7 +147,7 @@ body {
   .spinner {
     @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary;
   }
-  
+
   .spinner-primary {
     @apply animate-spin rounded-full border-2 border-white border-t-transparent;
   }

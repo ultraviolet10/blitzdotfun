@@ -1,34 +1,28 @@
 "use client";
 
-import { FlipHeader } from "../PreContestScreen/components/FlipHeader";
+import { FlipHeader } from "~/components/shared/FlipHeader";
 import { EndedCreatorCards } from "./components/EndedCreatorCards";
 import { WinnerAnnouncement } from "./components/WinnerAnnouncement";
 import { UserAddressProvider } from "~/contexts/UserAddressContext";
-
-const _KISMET_ADDRESS = "0x58f19e55058057b04feae2eea88f90b84b7714eb";
 
 type ContestEndedScreenProps = {
   onNavigateToPreContest?: () => void;
 };
 
-export function ContestEndedScreen({ onNavigateToPreContest }: ContestEndedScreenProps) {
+export function ContestEndedScreen({
+  onNavigateToPreContest,
+}: ContestEndedScreenProps) {
   return (
     <UserAddressProvider>
-      <div className="min-h-screen bg-gray-50 pb-safe">
-        {/* Header */}
+      <div className="min-h-screen bg-white pb-safe flex flex-col">
         <FlipHeader />
 
-        {/* Main Content */}
-        <div className="px-3 py-3 space-y-4">
-          {/* Creator Cards with Final Scores */}
+        <div className="px-3 py-3 flex-1">
           <EndedCreatorCards />
 
-          {/* Winner Announcement */}
-          <WinnerAnnouncement />
-
-          {/* Reset Button for Testing */}
+          {/* //TODO: Shall be removed in production - @kshitij-hash */}
           {onNavigateToPreContest && (
-            <div className="flex justify-center">
+            <div className="flex justify-center mt-2">
               <button
                 onClick={onNavigateToPreContest}
                 className="bg-lime-400 hover:bg-lime-300 text-black font-semibold py-3 px-6 rounded-full transition-colors"
@@ -37,6 +31,10 @@ export function ContestEndedScreen({ onNavigateToPreContest }: ContestEndedScree
               </button>
             </div>
           )}
+        </div>
+
+        <div className="mt-auto">
+          <WinnerAnnouncement />
         </div>
       </div>
     </UserAddressProvider>
