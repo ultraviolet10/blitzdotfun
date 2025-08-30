@@ -6,7 +6,6 @@ const blitzPublicClient = createPublicClient({
     transport: http(),
 })
 
-
 // todo more type finagling
 const blitzWalletClient: WalletClient<Transport, Chain> = createWalletClient({
     chain: base,

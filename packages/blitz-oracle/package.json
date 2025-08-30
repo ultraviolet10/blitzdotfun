@@ -1,5 +1,5 @@
 {
-    "name": "blitz-oracle",
+    "name": "@blitzdotfun/blitz-oracle",
     "type": "module",
     "scripts": {
         "dev": "wrangler dev",
@@ -7,6 +7,7 @@
         "cf-typegen": "wrangler types --env-interface CloudflareBindings"
     },
     "dependencies": {
+        "@blitzdotfun/blitz-contracts": "workspace:*",
         "hono": "^4.9.4",
         "viem": "^2.36.0"
     },
