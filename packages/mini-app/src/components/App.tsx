@@ -7,6 +7,9 @@ import { PreContestScreen } from "~/screens/PreContestScreen";
 import { OngoingContestScreen } from "~/screens/OngoingContestScreen";
 import { ContestEndedScreen } from "~/screens/ContestEndedScreen";
 import { AuthScreen } from "~/screens/AuthScreen";
+import { WelcomeScreen } from "~/screens/CreatorScreens/Welcome";
+import { PostContentScreen } from "~/screens/CreatorScreens/PostContent";
+import { SuccessScreen } from "~/screens/CreatorScreens/Success";
 
 // --- Types ---
 
@@ -14,7 +17,13 @@ export interface AppProps {
   title?: string;
 }
 
-type ScreenType = "pre-contest" | "ongoing-contest" | "contest-ended";
+type ScreenType =
+  | "pre-contest"
+  | "ongoing-contest"
+  | "contest-ended"
+  | "welcome"
+  | "success"
+  | "post-content";
 
 /**
  * Flip App - Creator Battle Mini App
@@ -28,9 +37,7 @@ type ScreenType = "pre-contest" | "ongoing-contest" | "contest-ended";
  * @param props - Component props
  * @param props.title - Optional title for the mini app (defaults to "Flip")
  */
-export default function App(
-  { title: _title }: AppProps = { title: "Flip" }
-) {
+export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
   // --- Hooks ---
   const { isSDKLoaded, context } = useMiniApp();
   const { ready, authenticated } = usePrivy();
@@ -42,7 +49,7 @@ export default function App(
       <div className="flex items-center justify-center h-screen bg-black">
         <div className="text-center">
           <div className="w-8 h-8 mx-auto mb-4 border-4 border-gray-800 border-t-green-500 rounded-full animate-spin"></div>
-          <p className="text-gray-400">Loading Flip...</p>
+          <p className="text-gray-400">Loading Blitz...</p>
         </div>
       </div>
     );
@@ -73,16 +80,36 @@ export default function App(
   const renderScreen = () => {
     switch (currentScreen) {
       case "pre-contest":
-        return <PreContestScreen onNavigateToOngoing={() => navigateToScreen("ongoing-contest")} />;
+        return (
+          <PreContestScreen
+            onNavigateToOngoing={() => navigateToScreen("ongoing-contest")}
+          />
+        );
       case "ongoing-contest":
-        return <OngoingContestScreen 
-          onNavigateToPreContest={() => navigateToScreen("pre-contest")}
-          onNavigateToEnded={() => navigateToScreen("contest-ended")}
-        />;
+        return (
+          <OngoingContestScreen
+            onNavigateToPreContest={() => navigateToScreen("pre-contest")}
+            onNavigateToEnded={() => navigateToScreen("contest-ended")}
+          />
+        );
       case "contest-ended":
-        return <ContestEndedScreen onNavigateToPreContest={() => navigateToScreen("pre-contest")} />;
+        return (
+          <ContestEndedScreen
+            onNavigateToPreContest={() => navigateToScreen("welcome")}
+          />
+        );
+      case "welcome":
+        return <WelcomeScreen onNavigateToSuccess={() => navigateToScreen("success")} />;
+      case "success":
+        return <SuccessScreen onNavigateToPostContent={() => navigateToScreen("post-content")} />;
+      case "post-content":
+        return <PostContentScreen onNavigateToPreContest={() => navigateToScreen("pre-contest")} />;
       default:
-        return <PreContestScreen onNavigateToOngoing={() => navigateToScreen("ongoing-contest")} />;
+        return (
+          <PreContestScreen
+            onNavigateToOngoing={() => navigateToScreen("ongoing-contest")}
+          />
+        );
     }
   };
 

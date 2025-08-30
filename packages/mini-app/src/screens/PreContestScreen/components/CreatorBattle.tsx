@@ -5,13 +5,7 @@ import { CreatorCard } from "./CreatorCard";
 import { getZoraProfile } from "~/lib/getZoraProfile";
 import { ProfileData } from "~/types/profile";
 import { useUserAddress } from "~/contexts/UserAddressContext";
-
-// Lightning Icon Component
-const LightningIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="currentColor"/>
-  </svg>
-);
+import lightningIcon from "../../../../public/logo.svg";
 
 const KISMET_ADDRESS = "0x58f19e55058057b04feae2eea88f90b84b7714eb";
 
@@ -59,25 +53,35 @@ export function CreatorBattle() {
   if (loading) {
     return (
       <div className="px-4 py-6">
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-white mb-2">Creator Battle</h2>
-          <p className="text-gray-400 text-sm">Loading creator profiles...</p>
-        </div>
         <div className="space-y-4 mb-6">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 animate-pulse">
-            <div className="h-20 bg-gray-800 rounded"></div>
+          <div
+            className="border rounded-2xl p-4 animate-pulse"
+            style={{
+              background: "rgba(166, 236, 156, 0.1)",
+              borderColor: "#A6EC9C",
+            }}
+          >
+            <div
+              className="h-20 rounded"
+              style={{ background: "rgba(184, 239, 146, 0.2)" }}
+            ></div>
           </div>
           <div className="flex items-center justify-center py-2">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gray-700 rounded-full animate-pulse"></div>
-              <span className="text-lg font-bold text-gray-500 tracking-wider">
-                VS
-              </span>
-              <div className="w-8 h-8 bg-gray-700 rounded-full animate-pulse"></div>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center">
+              <img src={lightningIcon.src} alt="lightning" />
             </div>
           </div>
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-4 animate-pulse">
-            <div className="h-20 bg-gray-800 rounded"></div>
+          <div
+            className="border rounded-2xl p-4 animate-pulse"
+            style={{
+              background: "rgba(166, 236, 156, 0.1)",
+              borderColor: "#A6EC9C",
+            }}
+          >
+            <div
+              className="h-20 rounded"
+              style={{ background: "rgba(184, 239, 146, 0.2)" }}
+            ></div>
           </div>
         </div>
       </div>
@@ -88,30 +92,36 @@ export function CreatorBattle() {
     return (
       <div className="px-4 py-6">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-white mb-2">Creator Battle</h2>
-          <p className="text-red-400 text-sm">
-            {error || "Failed to load creator data"}
-          </p>
+          <h2 className="text-xl font-bold mb-2" style={{ color: "#124D04" }}>
+            Creator Battle
+          </h2>
+          <div
+            className="border border-red-300 rounded-lg p-3"
+            style={{ background: "rgba(252, 165, 165, 0.1)" }}
+          >
+            <p
+              className="text-sm font-schibsted-grotesk"
+              style={{ color: "#B91C1C" }}
+            >
+              {error || "Failed to load creator data"}
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="px-4 py-6">
-      <div className="space-y-6">
-        {creators[0] && <CreatorCard creator={creators[0]} />}
+    <div className="py-4">
+      {creators[0] && <CreatorCard creator={creators[0]} />}
 
-        <div className="flex items-center justify-center py-2">
-          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-            <div className="text-black">
-              <LightningIcon />
-            </div>
-          </div>
+      <div className="flex items-center justify-center pb-2">
+        <div className="w-14 h-14 rounded-full flex items-center justify-center">
+          <img src={lightningIcon.src} alt="lightning" />
         </div>
-
-        {creators[1] && <CreatorCard creator={creators[1]} />}
       </div>
+
+      {creators[1] && <CreatorCard creator={creators[1]} />}
     </div>
   );
 }

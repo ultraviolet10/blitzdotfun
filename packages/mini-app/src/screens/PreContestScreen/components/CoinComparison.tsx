@@ -1,5 +1,5 @@
 "use client";
-
+// TODO: @kshitij-hash: see if we can remove this
 import { useState, useEffect } from "react";
 import { compareCoinMarketCaps, CoinComparisonResult } from "~/lib/coinComparison";
 import { BarChart3 } from "lucide-react";

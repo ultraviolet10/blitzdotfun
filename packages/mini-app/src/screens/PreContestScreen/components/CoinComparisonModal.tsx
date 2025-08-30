@@ -1,5 +1,5 @@
 "use client";
-
+// TODO: @kshitij-hash: see if we can remove this
 import { useEffect, useRef } from "react";
 import { CoinComparisonResult } from "~/lib/coinComparison";
 import {

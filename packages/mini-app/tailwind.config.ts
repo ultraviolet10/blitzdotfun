@@ -38,6 +38,9 @@ export default {
   		},
   		fontFamily: {
   			syne: ['var(--font-syne)', 'sans-serif'],
+  			'dela-gothic-one': ['var(--font-dela-gothic-one)', 'sans-serif'],
+			'schibsted-grotesk': ['var(--font-schibsted-grotesk)', 'sans-serif'],
+			'nunito': ['var(--font-nunito)', 'sans-serif'],
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

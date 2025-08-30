@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Syne } from 'next/font/google';
+import { Syne, Schibsted_Grotesk, Dela_Gothic_One, Nunito } from 'next/font/google';
 
 import { getSession } from '~/auth';
 import '~/app/globals.css';
@@ -12,6 +12,27 @@ const syne = Syne({
   display: 'swap',
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-syne',
+});
+
+const schibstedGrotesk = Schibsted_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-schibsted-grotesk',
+});
+
+const delagothicOne = Dela_Gothic_One({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['400'],
+  variable: '--font-dela-gothic-one',
+});
+
+const nunito = Nunito({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-nunito',
 });
 
 export const metadata: Metadata = {
@@ -27,7 +48,7 @@ export default async function RootLayout({
   const session = await getSession();
 
   return (
-    <html lang="en" className={`${syne.variable}`}>
+    <html lang="en" className={`${syne.variable} ${schibstedGrotesk.variable} ${delagothicOne.variable} ${nunito.variable}`}>
       <body>
         <Providers session={session}>
           {children}

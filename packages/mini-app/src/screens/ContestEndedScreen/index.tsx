@@ -1,67 +1,40 @@
 "use client";
 
-import { FlipHeader } from "../PreContestScreen/components/FlipHeader";
-import { ContestEndedTimer } from "./components/ContestEndedTimer";
-import { StatsComparison } from "./components/StatsComparison";
+import { FlipHeader } from "~/components/shared/FlipHeader";
+import { EndedCreatorCards } from "./components/EndedCreatorCards";
 import { WinnerAnnouncement } from "./components/WinnerAnnouncement";
 import { UserAddressProvider } from "~/contexts/UserAddressContext";
-
-const KISMET_ADDRESS = "0x58f19e55058057b04feae2eea88f90b84b7714eb";
 
 type ContestEndedScreenProps = {
   onNavigateToPreContest?: () => void;
 };
 
-export function ContestEndedScreen({ onNavigateToPreContest }: ContestEndedScreenProps) {
+export function ContestEndedScreen({
+  onNavigateToPreContest,
+}: ContestEndedScreenProps) {
   return (
     <UserAddressProvider>
-      <div className="h-screen bg-black flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex-shrink-0">
-          <FlipHeader />
-        </div>
+      <div className="min-h-screen bg-white pb-safe flex flex-col">
+        <FlipHeader />
 
-        {/* Main Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="px-4 py-4">
-            {/* Contest Title */}
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-white mb-1">
-                Creator Battle - Ended
-              </h2>
-              <p className="text-gray-400 text-xs">
-                The battle has concluded! Here are the final results.
-              </p>
+        <div className="px-3 py-3 flex-1">
+          <EndedCreatorCards />
+
+          {/* //TODO: Shall be removed in production - @kshitij-hash */}
+          {onNavigateToPreContest && (
+            <div className="flex justify-center mt-2">
+              <button
+                onClick={onNavigateToPreContest}
+                className="bg-lime-400 hover:bg-lime-300 text-black font-semibold py-3 px-6 rounded-full transition-colors"
+              >
+                Navigate to Welcome
+              </button>
             </div>
-
-            {/* Winner Announcement */}
-            <WinnerAnnouncement />
-
-            {/* Stats Comparison */}
-            <StatsComparison
-              creatorAddress2={KISMET_ADDRESS}
-            />
-
-            {/* Reset Button for Testing */}
-            {onNavigateToPreContest && (
-              <div className="mt-8 flex justify-center">
-                <button
-                  onClick={onNavigateToPreContest}
-                  className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium py-2 px-4 rounded-lg border border-gray-700 transition-colors flex items-center space-x-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span>Reset Contest (Testing)</span>
-                </button>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Fixed Timer Footer with Confetti */}
-        <div className="flex-shrink-0">
-          <ContestEndedTimer />
+        <div className="mt-auto">
+          <WinnerAnnouncement />
         </div>
       </div>
     </UserAddressProvider>
