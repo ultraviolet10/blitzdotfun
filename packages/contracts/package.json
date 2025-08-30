@@ -1,0 +1,37 @@
+{
+  "name": "@blitzdotfun/blitz-contracts",
+  "version": "0.1.0",
+  "description": "Smart contracts and ABIs for Blitz protocol",
+  "type": "module",
+  "exports": {
+    "./local": "./deployments/local/abis.ts",
+    "./testnet": "./deployments/testnet/abis.ts",
+    "./mainnet": "./deployments/mainnet/abis.ts"
+  },
+  "files": [
+    "src/**/*.sol",
+    "deployments/**/*"
+  ],
+  "scripts": {
+    "build": "make build",
+    "test": "make test",
+    "deploy:local": "make deploy-local",
+    "deploy:testnet": "make deploy-sepolia",
+    "clean": "make clean"
+  },
+  "dependencies": {
+    "viem": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "node-jq": "^6.0.1"
+  },
+  "keywords": [
+    "ethereum",
+    "smart-contracts", 
+    "abi",
+    "blitz",
+    "defi"
+  ]
+}
