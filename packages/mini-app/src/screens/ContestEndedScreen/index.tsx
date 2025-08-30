@@ -27,7 +27,7 @@ export function ContestEndedScreen({
                 onClick={onNavigateToPreContest}
                 className="bg-lime-400 hover:bg-lime-300 text-black font-semibold py-3 px-6 rounded-full transition-colors"
               >
-                🧪 Reset Contest (Testing)
+                Navigate to Welcome
               </button>
             </div>
           )}
