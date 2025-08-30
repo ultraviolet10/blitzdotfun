@@ -22,6 +22,7 @@
     "cleanup": "node scripts/cleanup.js"
   },
   "dependencies": {
+    "@blitzdotfun/blitz-contracts": "workspace:*",
     "@farcaster/auth-client": ">=0.3.0 <1.0.0",
     "@farcaster/auth-kit": ">=0.6.0 <1.0.0",
     "@farcaster/mini-app-solana": ">=0.0.17 <1.0.0",
