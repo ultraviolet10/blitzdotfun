@@ -2,10 +2,19 @@
   "name": "flip monorepo",
   "version": "0.0.0",
   "private": true,
+  "workspaces": [
+    "packages/contracts",
+    "packages/mini-app"
+  ],
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "node-jq": "^6.0.1",
+    "concurrently": "^8.2.2"
   },
   "peerDependencies": {
     "typescript": "^5"
-  }
+  },
+  "trustedDependencies": [
+    "node-jq"
+  ]
 }
