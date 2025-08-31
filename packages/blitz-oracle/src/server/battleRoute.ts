@@ -4,12 +4,17 @@ import { createBattleBodyValidation } from "../handlers/create/validation"
 
 export default new Hono() //
     .post(
+        /**
+         * This route is called when we detect that both users have deposited 
+         * tokens into the Blitz contract. 
+         */
         "/createNewBattle", //
-        // [uv1000] openApi descriptor if you decide to do it
         createBattleBodyValidation,
         async (c) => {
             const input = c.req.valid("json")
             const _output = await createNewBattle(input)
+
+            // write it to database
         },
     )
 /**
