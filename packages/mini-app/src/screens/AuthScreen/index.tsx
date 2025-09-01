@@ -105,6 +105,7 @@ export function AuthScreen({ onContinueWithFarcaster }: AuthScreenProps) {
             )}
           </button>
 
+          {/* Farcaster */}
           {hasFarcasterContext && (
             <div className="text-center">
               <button
