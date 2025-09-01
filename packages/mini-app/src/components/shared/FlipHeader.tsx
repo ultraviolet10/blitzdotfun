@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useCrossAppAccounts, usePrivy } from "@privy-io/react-auth";
 import { useMiniApp } from "@neynar/react";
 import { InfoDrawer } from "./InfoDrawer";
 import { ShareDrawer } from "./ShareDrawer";
@@ -13,8 +12,6 @@ interface FlipHeaderProps {
 }
 
 export function FlipHeader({ onProfileClick }: FlipHeaderProps) {
-  const { ready, authenticated, user } = usePrivy();
-  const { loginWithCrossAppAccount } = useCrossAppAccounts();
   const { context } = useMiniApp();
   const [isInfoDrawerOpen, setIsInfoDrawerOpen] = useState(false);
   const [isShareDrawerOpen, setIsShareDrawerOpen] = useState(false);
@@ -34,7 +31,7 @@ export function FlipHeader({ onProfileClick }: FlipHeaderProps) {
         </h1>
 
         <div className="flex items-center space-x-2">
-          {ready && authenticated && user && context?.user ? (
+          {context?.user ? (
             <button
               onClick={onProfileClick}
               className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
@@ -46,22 +43,7 @@ export function FlipHeader({ onProfileClick }: FlipHeaderProps) {
                 style={{ borderColor: "#1C7807" }}
               />
             </button>
-          ) : (
-            <button
-              onClick={() =>
-                loginWithCrossAppAccount({ appId: "clpgf04wn04hnkw0fv1m11mnb" })
-              }
-              disabled={!ready}
-              className="font-schibsted-grotesk px-5 py-2 text-sm font-bold rounded-full"
-              style={{
-                color: "#124D04",
-                background:
-                  "linear-gradient(to right, #A6EC9C 0%, #B8EF92 100%)",
-              }}
-            >
-              {!ready ? "Loading..." : "Connect Wallet"}
-            </button>
-          )}
+          ) : null}
           <button onClick={() => setIsInfoDrawerOpen(true)}>
             <img src={infoIcon.src} alt="info" className="w-6 h-6" />
           </button>
