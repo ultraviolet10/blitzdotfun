@@ -3,20 +3,20 @@
 import { useMiniApp } from "@neynar/react";
 import { useQuickAuth } from "~/hooks/useQuickAuth";
 import { useAccount, useChainId } from "wagmi";
-import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
+import { useWallet as useSolanaWallet } from "@solana/wallet-adapter-react";
 import { truncateAddress } from "~/lib/truncateAddress";
 import sdk from "@farcaster/miniapp-sdk";
 
 /**
  * ProfileTab component displays user profile information and mini app context.
- * 
+ *
  * This component provides a user-friendly view of the current user's profile
  * and relevant mini app context information, including:
  * - User profile details (avatar, name, username, FID)
  * - Authentication status
  * - Client information and capabilities
  * - Mini app configuration
- * 
+ *
  * @example
  * ```tsx
  * <ProfileTab />
@@ -25,13 +25,13 @@ import sdk from "@farcaster/miniapp-sdk";
 export function ProfileTab() {
   const { context } = useMiniApp();
   const { status } = useQuickAuth();
-  
+
   // Wallet hooks
   const { address: evmAddress, isConnected: isEvmConnected } = useAccount();
   const chainId = useChainId();
   const solanaWallet = useSolanaWallet();
   const { publicKey: solanaPublicKey } = solanaWallet;
-  
+
   return (
     <div className="space-y-6 px-6 w-full max-w-md mx-auto">
       {/* User Profile Section */}
@@ -40,19 +40,21 @@ export function ProfileTab() {
           <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
             👤 Profile
           </h2>
-          
+
           <div className="flex items-center space-x-4 mb-4">
             {context.user.pfpUrl && (
-              <img 
-                src={context.user.pfpUrl} 
-                alt="Profile" 
+              <img
+                src={context.user.pfpUrl}
+                alt="Profile"
                 className="w-16 h-16 rounded-full border-2 border-primary"
               />
             )}
             <div className="flex-1">
-              <h3 
+              <h3
                 className="font-bold text-lg hover:underline cursor-pointer text-gray-900 dark:text-gray-100"
-                onClick={() => sdk.actions.viewProfile({ fid: context.user.fid })}
+                onClick={() =>
+                  sdk.actions.viewProfile({ fid: context.user.fid })
+                }
               >
                 {context.user.displayName || context.user.username}
               </h3>
@@ -72,24 +74,31 @@ export function ProfileTab() {
         <h2 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100">
           💰 Wallet
         </h2>
-        
+
         <div className="space-y-3">
           {/* EVM Wallet */}
           <div className="border-b border-gray-200 dark:border-gray-600 pb-3">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">EVM Wallet</span>
-              <span className={`text-xs px-2 py-1 rounded-full ${
-                isEvmConnected 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-              }`}>
-                {isEvmConnected ? 'Connected' : 'Disconnected'}
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                EVM Wallet
+              </span>
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${
+                  isEvmConnected
+                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                }`}
+              >
+                {isEvmConnected ? "Connected" : "Disconnected"}
               </span>
             </div>
             {evmAddress && (
               <div className="space-y-1">
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Address: <span className="font-mono">{truncateAddress(evmAddress)}</span>
+                  Address:{" "}
+                  <span className="font-mono">
+                    {truncateAddress(evmAddress)}
+                  </span>
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   Chain ID: <span className="font-mono">{chainId}</span>
@@ -101,18 +110,25 @@ export function ProfileTab() {
           {/* Solana Wallet */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Solana Wallet</span>
-              <span className={`text-xs px-2 py-1 rounded-full ${
-                solanaPublicKey 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-              }`}>
-                {solanaPublicKey ? 'Connected' : 'Disconnected'}
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Solana Wallet
+              </span>
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${
+                  solanaPublicKey
+                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                }`}
+              >
+                {solanaPublicKey ? "Connected" : "Disconnected"}
               </span>
             </div>
             {solanaPublicKey && (
               <p className="text-xs text-gray-600 dark:text-gray-400">
-                Address: <span className="font-mono">{truncateAddress(solanaPublicKey.toString())}</span>
+                Address:{" "}
+                <span className="font-mono">
+                  {truncateAddress(solanaPublicKey.toString())}
+                </span>
               </p>
             )}
           </div>

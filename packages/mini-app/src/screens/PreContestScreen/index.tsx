@@ -7,16 +7,18 @@ import { ContestTimer } from "~/components/shared/ContestTimer";
 
 type PreContestScreenProps = {
   onNavigateToOngoing?: () => void;
+  onNavigateToProfile?: () => void;
 };
 
 function PreContestScreenContent({
   onNavigateToOngoing,
+  onNavigateToProfile,
 }: PreContestScreenProps) {
   const contestStartTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
 
   return (
     <div className="min-h-screen bg-white pb-safe">
-      <FlipHeader />
+      <FlipHeader onProfileClick={onNavigateToProfile} />
 
       <div className="px-3 py-2">
         <ContestTimer time={contestStartTime} isStart />
@@ -43,10 +45,14 @@ function PreContestScreenContent({
 
 export function PreContestScreen({
   onNavigateToOngoing,
+  onNavigateToProfile,
 }: PreContestScreenProps) {
   return (
     <UserAddressProvider>
-      <PreContestScreenContent onNavigateToOngoing={onNavigateToOngoing} />
+      <PreContestScreenContent 
+        onNavigateToOngoing={onNavigateToOngoing}
+        onNavigateToProfile={onNavigateToProfile}
+      />
     </UserAddressProvider>
   );
 }

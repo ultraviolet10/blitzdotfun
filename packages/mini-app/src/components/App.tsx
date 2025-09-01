@@ -7,6 +7,7 @@ import { PreContestScreen } from "~/screens/PreContestScreen";
 import { OngoingContestScreen } from "~/screens/OngoingContestScreen";
 import { ContestEndedScreen } from "~/screens/ContestEndedScreen";
 import { AuthScreen } from "~/screens/AuthScreen";
+import { ProfileScreen } from "~/screens/ProfileScreen";
 import { WelcomeScreen } from "~/screens/CreatorScreens/Welcome";
 import { PostContentScreen } from "~/screens/CreatorScreens/PostContent";
 import { SuccessScreen } from "~/screens/CreatorScreens/Success";
@@ -21,6 +22,7 @@ type ScreenType =
   | "pre-contest"
   | "ongoing-contest"
   | "contest-ended"
+  | "profile"
   | "welcome"
   | "success"
   | "post-content";
@@ -83,6 +85,7 @@ export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
         return (
           <PreContestScreen
             onNavigateToOngoing={() => navigateToScreen("ongoing-contest")}
+            onNavigateToProfile={() => navigateToScreen("profile")}
           />
         );
       case "ongoing-contest":
@@ -98,6 +101,12 @@ export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
             onNavigateToPreContest={() => navigateToScreen("welcome")}
           />
         );
+      case "profile":
+        return (
+          <ProfileScreen
+            onBack={() => navigateToScreen("pre-contest")}
+          />
+        );
       case "welcome":
         return <WelcomeScreen onNavigateToSuccess={() => navigateToScreen("success")} />;
       case "success":
@@ -108,6 +117,7 @@ export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
         return (
           <PreContestScreen
             onNavigateToOngoing={() => navigateToScreen("ongoing-contest")}
+            onNavigateToProfile={() => navigateToScreen("profile")}
           />
         );
     }
