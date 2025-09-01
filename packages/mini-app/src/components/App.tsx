@@ -68,7 +68,7 @@ export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
           paddingRight: context?.client.safeAreaInsets?.right ?? 0,
         }}
       >
-        <AuthScreen />
+        <AuthScreen onContinueWithFarcaster={() => navigateToScreen("pre-contest")} />
       </div>
     );
   }
