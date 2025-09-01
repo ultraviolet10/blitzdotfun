@@ -5,6 +5,7 @@ import { requestId as requestIdMiddleware } from "hono/request-id"
 import { timeout as timeoutMiddleware } from "hono/timeout"
 
 // [uv1000] api routes
+import battleRoutes from "./battleRoute"
 
 const app = new Hono()
     .use(
@@ -18,6 +19,9 @@ const app = new Hono()
     )
     .use(timeoutMiddleware(30_000))
     .use(requestIdMiddleware())
+
+// Mount routes
+app.route("/battle", battleRoutes)
 
 // Landing Page
 app.get("/", (c) => {

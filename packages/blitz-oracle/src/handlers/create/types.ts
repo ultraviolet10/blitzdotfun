@@ -11,3 +11,60 @@ export type CreateBattleInput = {
 export type CreateBattleOutput = {
     battleId: Hex
 }
+
+// Contest flow types
+export type ContestStatus =
+    | "created"
+    | "awaiting_deposits"
+    | "awaiting_content"
+    | "active_battle"
+    | "completed"
+    | "forfeited"
+
+export interface ContestParticipant {
+    handle: string
+    walletAddress: Address
+    zoraProfile?: string
+}
+
+export interface DepositStatus {
+    detected: boolean
+    txHash?: string
+    timestamp?: number
+}
+
+export interface ContentPost {
+    zoraPostUrl?: string
+    timestamp?: number
+    detected: boolean
+}
+
+export interface ContestMetrics {
+    participantOneVotes: number
+    participantTwoVotes: number
+    lastUpdated: number
+}
+
+export interface Contest {
+    contestId: string
+    name: string
+    status: ContestStatus
+    participantOne: ContestParticipant
+    participantTwo: ContestParticipant
+    contractAddress: Address
+    createdAt: number
+    depositDeadline?: number
+    contentDeadline?: number
+    battleEndTime?: number
+    deposits: Record<string, DepositStatus>
+    contentPosts: Record<string, ContentPost>
+    battleId?: string
+    metrics?: ContestMetrics
+}
+
+export interface CreateContestInput {
+    name: string
+    participantOne: ContestParticipant
+    participantTwo: ContestParticipant
+    contractAddress: Address
+}
