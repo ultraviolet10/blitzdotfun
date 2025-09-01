@@ -57,6 +57,10 @@ export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
     );
   }
 
+  const navigateToScreen = (screen: ScreenType) => {
+    setCurrentScreen(screen);
+  };
+
   // Show authentication screen if not authenticated
   if (!authenticated || !ready) {
     return (
@@ -68,15 +72,12 @@ export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
           paddingRight: context?.client.safeAreaInsets?.right ?? 0,
         }}
       >
-        <AuthScreen onContinueWithFarcaster={() => navigateToScreen("pre-contest")} />
+        <AuthScreen
+          onContinueWithFarcaster={() => navigateToScreen("pre-contest")}
+        />
       </div>
     );
   }
-
-  // --- Screen Navigation ---
-  const navigateToScreen = (screen: ScreenType) => {
-    setCurrentScreen(screen);
-  };
 
   // --- Render Current Screen ---
   const renderScreen = () => {
@@ -102,17 +103,25 @@ export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
           />
         );
       case "profile":
+        return <ProfileScreen onBack={() => navigateToScreen("pre-contest")} />;
+      case "welcome":
         return (
-          <ProfileScreen
-            onBack={() => navigateToScreen("pre-contest")}
+          <WelcomeScreen
+            onNavigateToSuccess={() => navigateToScreen("success")}
           />
         );
-      case "welcome":
-        return <WelcomeScreen onNavigateToSuccess={() => navigateToScreen("success")} />;
       case "success":
-        return <SuccessScreen onNavigateToPostContent={() => navigateToScreen("post-content")} />;
+        return (
+          <SuccessScreen
+            onNavigateToPostContent={() => navigateToScreen("post-content")}
+          />
+        );
       case "post-content":
-        return <PostContentScreen onNavigateToPreContest={() => navigateToScreen("pre-contest")} />;
+        return (
+          <PostContentScreen
+            onNavigateToPreContest={() => navigateToScreen("pre-contest")}
+          />
+        );
       default:
         return (
           <PreContestScreen
