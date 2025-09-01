@@ -7,7 +7,9 @@
         "port": 3001 // Your desired port
     },
     "vars": {
-        "APP_PORT": "3001"
+        "APP_PORT": "3001",
+        "FIREBASE_PROJECT_ID": "blitzdotfun",
+        "FIREBASE_DATABASE_URL": "https://blitzdotfun-default-rtdb.asia-southeast1.firebasedatabase.app"
     },
     "triggers": {
         "crons": ["* * * * *"]

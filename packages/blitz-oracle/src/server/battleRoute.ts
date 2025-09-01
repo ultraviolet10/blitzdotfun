@@ -4,8 +4,11 @@ import { createContestBodyValidation } from "../handlers/create/contestValidatio
 import { createNewBattle } from "../handlers/create/createBattle"
 import { createBattleBodyValidation } from "../handlers/create/validation"
 import { checkContestDeposits } from "../services/depositMonitor"
+import { createFirebaseClient } from "../services/firebase-client"
+import { testFirebaseConnection } from "../services/firebase-test"
+import type { CloudflareBindings } from "../types/env"
 
-const app = new Hono()
+const app = new Hono<{ Bindings: CloudflareBindings }>()
 
 app.post(
     /**
@@ -71,6 +74,118 @@ app.post("/cron/check-deposits", async (c) => {
             },
             500,
         )
+    }
+})
+
+// Test endpoint for Firebase configuration
+app.get("/test-firebase", async (c) => {
+    try {
+        await testFirebaseConnection(c.env)
+        return c.json({ success: true, message: "Firebase configuration is valid" })
+    } catch (error) {
+        return c.json(
+            {
+                success: false,
+                error: error instanceof Error ? error.message : "Unknown error",
+            },
+            500,
+        )
+    }
+})
+
+// Test endpoint for Firebase CRUD operations
+app.get("/test-firebase-crud", async (c) => {
+    try {
+        const firebaseClient = createFirebaseClient(c.env)
+
+        // Test data
+        const testData = {
+            message: "Hello Firebase!",
+            timestamp: Date.now(),
+            testId: Math.random().toString(36).substring(7),
+        }
+
+        // Test write
+        console.log("Testing Firebase write...")
+        await firebaseClient.writeData("test/crud", testData)
+
+        // Test read
+        console.log("Testing Firebase read...")
+        const readResult = await firebaseClient.readData("test/crud")
+
+        // Test update
+        console.log("Testing Firebase update...")
+        await firebaseClient.updateData("test/crud", { updated: true, updateTime: Date.now() })
+
+        // Test read updated data
+        const updatedResult = await firebaseClient.readData("test/crud")
+
+        // Clean up - delete test data
+        console.log("Cleaning up test data...")
+        await firebaseClient.deleteData("test/crud")
+
+        return c.json({
+            success: true,
+            message: "Firebase CRUD operations completed successfully",
+            testResults: {
+                originalData: readResult,
+                updatedData: updatedResult,
+            },
+        })
+    } catch (error) {
+        return c.json(
+            {
+                success: false,
+                error: error instanceof Error ? error.message : "Unknown error",
+            },
+            500,
+        )
+    }
+})
+
+// Individual Firebase operation test endpoints
+app.post("/test/firebase/write", async (c) => {
+    try {
+        const firebaseClient = createFirebaseClient(c.env)
+        const data = await c.req.json()
+        const result = await firebaseClient.writeData("test/manual", data)
+        return c.json({ success: true, result })
+    } catch (error) {
+        return c.json({ success: false, error: error instanceof Error ? error.message : "Unknown error" }, 500)
+    }
+})
+
+app.get("/test/firebase/read/:path", async (c) => {
+    try {
+        const firebaseClient = createFirebaseClient(c.env)
+        const path = c.req.param("path")
+        const result = await firebaseClient.readData(`test/${path}`)
+        return c.json({ success: true, data: result })
+    } catch (error) {
+        return c.json({ success: false, error: error instanceof Error ? error.message : "Unknown error" }, 500)
+    }
+})
+
+app.patch("/test/firebase/update/:path", async (c) => {
+    try {
+        const firebaseClient = createFirebaseClient(c.env)
+        const path = c.req.param("path")
+        const data = await c.req.json()
+        const result = await firebaseClient.updateData(`test/${path}`, data)
+        return c.json({ success: true, result })
+    } catch (error) {
+        return c.json({ success: false, error: error instanceof Error ? error.message : "Unknown error" }, 500)
+    }
+})
+
+app.delete("/test/firebase/delete/:path", async (c) => {
+    try {
+        const firebaseClient = createFirebaseClient(c.env)
+        const path = c.req.param("path")
+        const result = await firebaseClient.deleteData(`test/${path}`)
+        return c.json({ success: true, result })
+    } catch (error) {
+        return c.json({ success: false, error: error instanceof Error ? error.message : "Unknown error" }, 500)
     }
 })
 

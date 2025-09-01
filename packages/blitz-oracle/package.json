@@ -8,6 +8,7 @@
     },
     "dependencies": {
         "@blitzdotfun/blitz-contracts": "workspace:*",
+        "@tsndr/cloudflare-worker-jwt": "^3.2.0",
         "@zoralabs/coins-sdk": "^0.3.0",
         "hono": "^4.9.4",
         "viem": "^2.36.0"
