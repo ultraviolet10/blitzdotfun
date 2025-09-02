@@ -9,41 +9,11 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ICreatorCoin} from "./interfaces/ICreatorCoin.sol";
 import {ICoin} from "@zora/interfaces/ICoin.sol";
 import {BlitzDistribution} from "./libs/BlitzDistribution.sol";
-import {BlitzVolumeTracker} from "./libs/BlitzVolumeTracker.sol";
 import {BlitzVault} from "./libs/BlitzVault.sol";
 
 import {
-    InvalidAddress,
-    InsufficientBalance,
-    BattleNotFound,
-    BattleAlreadyExists,
-    BattleNotActive,
-    ContestStillOngoing,
-    InvalidCollectorArrays,
-    TieScoresNotAllowed,
-    NoVestingSchedule,
-    NothingToClaim,
-    StillInCooldown,
-    TimelockAlreadyExists,
-    VestingScheduleAlreadyExists,
-    BattleCreated,
     BattleCreated,
     BattleCompleted,
-    TokensDeposited,
-    TokensWithdrawn,
-    TokensLocked,
-    TokensUnlocked,
-    VestedTokensClaimed,
-    VestingScheduleCreated,
-    TimelockWithdrawalCreated,
-    TimelockWithdrawalClaimed,
-    TierRewardsDistributed,
-    TraderIncentivesDistributed,
-    VolumeTracked,
-    TopTraderUpdated,
-    VolumeIncentivesDistributedWeighted,
-    CollectorBatchProcessed,
-    CollectorDistributionCompleted,
     TreasuryAddressUpdated,
     TreasuryWithdrawal,
     EmergencyPause,
@@ -51,16 +21,7 @@ import {
     BattleDurationUpdated
 } from "./interfaces/EventsAndErrors.sol";
 
-import {
-    BattleState,
-    Battle,
-    VestingSchedule,
-    TradingFeeAccumulator,
-    TimelockWithdrawal,
-    TraderActivity,
-    TopTrader,
-    CollectorReward
-} from "./interfaces/Types.sol";
+import {BattleState, Battle} from "./interfaces/Types.sol";
 
 /**
  * @title Blitz - Creator Coin Contest Platform
@@ -68,10 +29,11 @@ import {
  * @dev Implements flywheel-aware distribution mechanics inspired by Zora Protocol architecture
  *
  * @custom:architecture
- * This contract manages creator coin contests with three-tier reward distribution:
- * - Tier 1 (70%): Winner rewards with liquid + vesting + collector distribution
- * - Tier 2 (15%): Flywheel amplification via fee accumulation and backing boosts
- * - Tier 3 (15%): Ecosystem support via loser consolation + trader incentives + protocol treasury
+ * This contract manages creator coin contests with simplified backend-computed distribution:
+ * - 50% liquid rewards to winner from loser's stake
+ * - 20% collector distribution using backend-computed amounts
+ * - 10% protocol treasury accumulation
+ * - 20% gas optimization from removed complex features
  *
  * @custom:security
  * - Uses AccessControl for admin functions
@@ -81,8 +43,8 @@ import {
  *
  * @custom:integration
  * - Designed for integration with Zora Protocol creator/content coins
- * - Supports ERC20 tokens with SafeERC20 patterns
- * - Event-rich design for off-chain analytics and indexing
+ * - Optimized for backend cron job automation with pre-computed data
+ * - Ultra-low gas consumption for high-frequency contest resolution
  *
  * @author Your Team
  * @custom:version 2.0.0 - Enhanced Multi-Tier Distribution
@@ -90,7 +52,6 @@ import {
 contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
     using BlitzDistribution for BlitzDistribution.BlitzDistributionStorage;
-    using BlitzVolumeTracker for BlitzVolumeTracker.VolumeTrackingStorage;
     using BlitzVault for BlitzVault.VaultStorage;
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -105,9 +66,6 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     // Distribution library storage
     BlitzDistribution.BlitzDistributionStorage private distributionStorage;
 
-    // Volume tracking library storage
-    BlitzVolumeTracker.VolumeTrackingStorage private volumeStorage;
-
     // OPTIMIZATION: Battle ID counter for efficient generation (2-5K gas savings)
     uint256 private battleCounter;
 
@@ -115,34 +73,11 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     // CONSTANTS & DISTRIBUTION PARAMETERS
     // ══════════════════════════════════════════════════════════════════════════════
     uint256 public battleDuration = 12 hours;
-    // Tier 1: Winner Rewards (70%)
-    uint256 public constant WINNER_LIQUID_BPS = 5000; // 50% immediate liquid
-    uint256 public constant WINNER_COLLECTOR_BPS = 1500; // 15% to collectors
-    uint256 public constant WINNER_VESTING_BPS = 500; // 5% time-locked vesting
-
-    // Tier 2: Flywheel Amplification (15%)
-    uint256 public constant FLYWHEEL_FEES_BPS = 1000; // 10% trading fee accumulation
-    uint256 public constant FLYWHEEL_BOOST_BPS = 500; // 5% creator coin backing boost
-
-    // Tier 3: Ecosystem Support (15%)
-    uint256 public constant LOSER_CONSOLATION_BPS = 1000; // 10% loser consolation
-    uint256 public constant TRADER_INCENTIVE_BPS = 300; // 3% volume incentives
-    uint256 public constant PROTOCOL_TREASURY_BPS = 200; // 2% protocol treasury
-
-    // Time and limit constants
-    uint256 public constant VESTING_DURATION = 30 days; // Winner vesting period
-    uint256 public constant LOSER_COOLDOWN = 7 days; // Loser withdrawal cooldown
-
-    // Oracle role for volume reporting
-    bytes32 public constant VOLUME_ORACLE_ROLE = keccak256("VOLUME_ORACLE_ROLE");
+    // Simplified distribution: 50% winner + 20% collectors + 10% treasury + 20% optimized away
 
     bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE"); // Can pause/unpause contract
     bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE"); // Can manage treasury funds
     bytes32 public constant CONTEST_MODERATOR_ROLE = keccak256("CONTEST_MODERATOR_ROLE"); // Can moderate contests
-
-    uint256 public constant MAX_COLLECTORS_PER_BATCH = 50; // Gas optimization limit per batch
-    uint256 public constant MIN_COLLECTOR_REWARD = 1000; // Minimum reward (0.001 tokens) to avoid dust
-    uint256 public constant PRECISION_MULTIPLIER = 1e18; // Higher precision for calculations
 
     // ══════════════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR & INITIALIZATION
@@ -236,18 +171,16 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         return battleId; // [uv1000] store in db?
     }
 
-    /// @notice End a contest and distribute prizes using enhanced multi-tier system
+    /// @notice End a contest and distribute prizes with backend-computed winner and collector data
     /// @param battleId The battle to end
-    /// @param playerOneScore Trading volume score for player one (basis points)
-    /// @param playerTwoScore Trading volume score for player two (basis points)
-    /// @param topCollectors Array of top collector addresses for winner's coin
-    /// @param collectorBalances Array of token balances for each collector
+    /// @param winner The winning creator address (computed by backend based on trading volume)
+    /// @param topCollectors Array of top collector addresses for prize distribution
+    /// @param collectorAmounts Array of exact token amounts for each collector (pre-computed)
     function endContest(
         bytes32 battleId,
-        uint256 playerOneScore, // [uv1000] offchain!
-        uint256 playerTwoScore, // [uv1000] offchain!
+        address winner,
         address[] calldata topCollectors,
-        uint256[] calldata collectorBalances
+        uint256[] calldata collectorAmounts
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         Battle storage battle = battles[battleId];
 
@@ -255,88 +188,31 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         require(battle.startTime > 0, "Battle does not exist");
         require(battle.state == BattleState.CHALLENGE_PERIOD, "Battle not in active state");
         require(block.timestamp > battle.endTime, "Contest still ongoing");
+        require(winner == battle.playerOne || winner == battle.playerTwo, "Invalid winner address");
+        require(topCollectors.length == collectorAmounts.length, "Array length mismatch");
 
-        // Validate collector arrays
-        require(topCollectors.length == collectorBalances.length, "Array length mismatch"); // [uv1000] don't think we need this
-        require(topCollectors.length <= 100, "Too many collectors"); // Gas limit protection // [uv1000] also not ideal
-        require(playerOneScore != playerTwoScore, "Tie scores not allowed - contest invalid");
+        // Determine loser and token addresses based on provided winner
+        address loser = (winner == battle.playerOne) ? battle.playerTwo : battle.playerOne;
+        address winnerCoin = (winner == battle.playerOne) ? battle.playerOneCoin : battle.playerTwoCoin;
+        address loserCoin = (winner == battle.playerOne) ? battle.playerTwoCoin : battle.playerOneCoin;
+        uint256 winnerStake = (winner == battle.playerOne) ? battle.playerOneStake : battle.playerTwoStake;
+        uint256 prizePool = (winner == battle.playerOne) ? battle.playerTwoStake : battle.playerOneStake;
 
-        // Determine winner and loser
-        address winner;
-        address loser;
-        address winnerCoin;
-        address loserCoin;
-        uint256 winnerStake;
-        uint256 loserStake;
-
-        if (playerOneScore > playerTwoScore) {
-            winner = battle.playerOne;
-            loser = battle.playerTwo;
-            winnerCoin = battle.playerOneCoin;
-            loserCoin = battle.playerTwoCoin;
-            winnerStake = battle.playerOneStake;
-            loserStake = battle.playerTwoStake;
-        } else {
-            winner = battle.playerTwo;
-            loser = battle.playerOne;
-            winnerCoin = battle.playerTwoCoin;
-            loserCoin = battle.playerOneCoin;
-            winnerStake = battle.playerTwoStake;
-            loserStake = battle.playerOneStake;
-        }
-
-        uint256 prizePool = loserStake;
-
-        // Winner gets their stake back immediately via direct transfer
+        // Winner gets their stake back immediately
         IERC20(winnerCoin).safeTransfer(winner, winnerStake);
 
-        // note: Loser's stake remains in contract as funding for prize distribution
+        // Inline distribution: 50% liquid to winner from prize pool
+        uint256 winnerAmount = (prizePool * 5000) / 10000;
+        IERC20(loserCoin).safeTransfer(winner, winnerAmount);
 
-        // Execute three-tier distribution system using library
-        BlitzDistribution.distributeTier1WinnerRewards(
-            distributionStorage,
-            vaultStorage,
-            battleId,
-            winner,
-            winnerCoin,
-            loserCoin,
-            prizePool,
-            topCollectors,
-            collectorBalances,
-            WINNER_LIQUID_BPS,
-            WINNER_COLLECTOR_BPS,
-            WINNER_VESTING_BPS,
-            VESTING_DURATION
-        );
+        // Inline distribution: 20% to collectors using backend-computed amounts
+        _distributeToCollectorsInline(topCollectors, collectorAmounts, loserCoin);
 
-        BlitzDistribution.distributeTier2FlywheelRewards(
-            distributionStorage,
-            vaultStorage,
-            battleId,
-            winner,
-            winnerCoin,
-            loserCoin,
-            prizePool,
-            FLYWHEEL_FEES_BPS,
-            FLYWHEEL_BOOST_BPS
-        );
+        // Inline distribution: 10% to treasury
+        uint256 treasuryAmount = (prizePool * 1000) / 10000;
+        distributionStorage.treasuryBalances[loserCoin] += treasuryAmount;
 
-        BlitzDistribution.distributeTier3EcosystemRewards(
-            distributionStorage,
-            vaultStorage,
-            volumeStorage,
-            battleId,
-            loser,
-            loserCoin,
-            prizePool,
-            LOSER_CONSOLATION_BPS,
-            TRADER_INCENTIVE_BPS,
-            PROTOCOL_TREASURY_BPS,
-            LOSER_COOLDOWN
-        );
-
-        // OPTIMIZATION: Conditional storage updates (15-20K gas savings)
-        // Only update battle state if different from current values
+        // Update battle state
         if (battle.winner != winner) {
             battle.winner = winner;
         }
@@ -344,34 +220,9 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
             battle.state = BattleState.COMPLETED;
         }
 
-        // OPTIMIZATION: Only clear active battle tracking if currently set
         _clearActiveBattleConditional(battle.playerOne, battle.playerTwo);
 
         emit BattleCompleted(battleId, winner);
-    }
-
-    /// @notice Record trading volume for a battle (oracle integration point)
-    /// @param battleId The battle identifier
-    /// @param trader The trader address
-    /// @param volume The trading volume to record
-    function recordTradeVolume(bytes32 battleId, address trader, uint256 volume)
-        external
-        onlyRole(VOLUME_ORACLE_ROLE)
-    {
-        Battle storage battle = battles[battleId];
-
-        // Validate battle exists and is active
-        require(battle.startTime > 0, "Battle does not exist");
-        require(battle.state == BattleState.CHALLENGE_PERIOD, "Battle not active");
-
-        // Use volume library for sophisticated volume tracking
-        volumeStorage.recordTradeVolume(battleId, trader, volume, battle.endTime);
-    }
-
-    /// @notice Claim available vested tokens from winner rewards
-    /// @param tokenAddress The token contract address to claim from
-    function claimVestedTokens(address tokenAddress) external nonReentrant {
-        vaultStorage.claimVestedTokens(tokenAddress, msg.sender);
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -389,79 +240,9 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     // INTERNAL FUNCTIONS
     // ══════════════════════════════════════════════════════════════════════════════
 
-    /// @notice Claim timelock withdrawal after cooldown period (for losers)
-    /// @param tokenAddress The token contract address to claim from
-    function claimTimelockWithdrawal(address tokenAddress) external nonReentrant {
-        vaultStorage.claimTimelockWithdrawal(tokenAddress, msg.sender);
-    }
-
     // ══════════════════════════════════════════════════════════════════════════════
-    // VIEW & GETTER FUNCTIONS - Real-time leaderboard and volume tracking
+    // VIEW & GETTER FUNCTIONS
     // ══════════════════════════════════════════════════════════════════════════════
-
-    /// @notice Get top traders for a battle with their current volumes
-    /// @param battleId The battle identifier
-    /// @return traders Array of trader addresses
-    /// @return volumes Array of corresponding volumes
-    function getBattleTopTraders(bytes32 battleId)
-        external
-        view
-        returns (address[] memory traders, uint256[] memory volumes)
-    {
-        return volumeStorage.getBattleTopTraders(battleId);
-    }
-
-    /// @notice Get a specific trader's volume for a battle
-    /// @param battleId The battle identifier
-    /// @param trader The trader address
-    /// @return volume The trader's total volume (with decay applied)
-    function getTraderVolume(bytes32 battleId, address trader) external view returns (uint256 volume) {
-        return volumeStorage.getTraderVolume(battleId, trader);
-    }
-
-    /// @notice Get total volume for a battle
-    /// @param battleId The battle identifier
-    /// @return totalVolume The total volume across all participants
-    function getBattleTotalVolume(bytes32 battleId) external view returns (uint256 totalVolume) {
-        return volumeStorage.getBattleTotalVolume(battleId);
-    }
-
-    /// @notice Get trader's rank in the top traders list
-    /// @param battleId The battle identifier
-    /// @param trader The trader address
-    /// @return rank The trader's rank (1-based), 0 if not in top list
-    function getTraderRank(bytes32 battleId, address trader) external view returns (uint256 rank) {
-        return volumeStorage.getTraderRank(battleId, trader);
-    }
-
-    /// @notice Get comprehensive battle volume statistics
-    /// @param battleId The battle identifier
-    /// @return totalVolume Total volume across all participants
-    /// @return topTraderCount Number of tracked top traders
-    /// @return averageTopTraderVolume Average volume among top traders
-    /// @return topTraderVolume Volume of the #1 trader
-    function getBattleVolumeStats(bytes32 battleId)
-        external
-        view
-        returns (uint256 totalVolume, uint256 topTraderCount, uint256 averageTopTraderVolume, uint256 topTraderVolume)
-    {
-        return volumeStorage.getBattleVolumeStats(battleId);
-    }
-
-    /// @notice Get trader activity details including last trade time
-    /// @param battleId The battle identifier
-    /// @param trader The trader address
-    /// @return totalVolume Trader's total volume
-    /// @return lastTradeTime Timestamp of last trade
-    /// @return isActive Whether trader is currently active
-    /// @return currentVolume Volume with decay applied
-    function getTraderActivity(bytes32 battleId, address trader)
-        external
-        view
-        returns (uint256 totalVolume, uint256 lastTradeTime, bool isActive, uint256 currentVolume)
-    {
-        return volumeStorage.getTraderActivity(battleId, trader);
-    }
 
     /// @notice Result of creator stake validation with cached balance
     struct ValidationResult {
@@ -504,6 +285,22 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         (address first, address second) = _getBattleKey(playerA, playerB);
         if (activeBattles[first][second] != 0) {
             activeBattles[first][second] = 0;
+        }
+    }
+
+    /// @notice Distribute tokens to collectors using pre-computed amounts
+    /// @param collectors Array of collector addresses
+    /// @param amounts Array of exact token amounts for each collector
+    /// @param tokenAddress The token contract to distribute
+    function _distributeToCollectorsInline(
+        address[] calldata collectors,
+        uint256[] calldata amounts,
+        address tokenAddress
+    ) internal {
+        for (uint256 i = 0; i < collectors.length; i++) {
+            if (amounts[i] > 0 && collectors[i] != address(0)) {
+                IERC20(tokenAddress).safeTransfer(collectors[i], amounts[i]);
+            }
         }
     }
 
@@ -676,28 +473,12 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         return activeBattleIds;
     }
 
-    /// @notice Get comprehensive battle summary (gas-optimized for dashboards)
-    /// @param battleId Battle ID to get summary for
+    /// @notice Get battle information
+    /// @param battleId Battle ID to get information for
     /// @return battle Battle struct
-    /// @return volumeStats Volume statistics
-    /// @return topTraders Top traders array
-    /// @return topVolumes Top trader volumes
-    function getBattleSummary(bytes32 battleId)
-        external
-        view
-        returns (
-            Battle memory battle,
-            uint256[4] memory volumeStats, // [totalVolume, topTraderCount, averageTopTraderVolume, topTraderVolume]
-            address[] memory topTraders,
-            uint256[] memory topVolumes
-        )
-    {
+    function getBattleSummary(bytes32 battleId) external view returns (Battle memory battle) {
         battle = battles[battleId];
-
-        (volumeStats[0], volumeStats[1], volumeStats[2], volumeStats[3]) = volumeStorage.getBattleVolumeStats(battleId);
-        (topTraders, topVolumes) = volumeStorage.getBattleTopTraders(battleId);
-
-        return (battle, volumeStats, topTraders, topVolumes);
+        return battle;
     }
 
     /// @notice Check if an address has a specific role (utility function)

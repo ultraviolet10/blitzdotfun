@@ -40,18 +40,13 @@ contract DeployBlitz is BaseDeployScript {
             blitz.setTreasuryAddress(treasuryAddress);
         }
 
-        // Configure volume oracle
-        address volumeOracle = vm.envOr("VOLUME_ORACLE", deployer);
-        if (volumeOracle != address(0) && volumeOracle != deployer) {
-            console2.log("Granting VOLUME_ORACLE_ROLE to:", volumeOracle);
-            blitz.grantRole(blitz.VOLUME_ORACLE_ROLE(), volumeOracle);
-        }
+        // Volume oracle removed in optimization - backend handles volume calculations
 
         // Verify deployment
         _verifyDeployment(blitz, deployer, treasuryAddress, battleDuration);
 
         // Log final state
-        _logDeploymentSummary(address(blitz), deployer, treasuryAddress, battleDuration, volumeOracle);
+        _logDeploymentSummary(address(blitz), deployer, treasuryAddress, battleDuration);
     }
 
     function _verifyDeployment(
@@ -67,18 +62,15 @@ contract DeployBlitz is BaseDeployScript {
         console2.log("All verifications passed");
     }
 
-    function _logDeploymentSummary(
-        address blitzAddress,
-        address deployer,
-        address treasury,
-        uint256 battleDuration,
-        address volumeOracle
-    ) internal view {
+    function _logDeploymentSummary(address blitzAddress, address deployer, address treasury, uint256 battleDuration)
+        internal
+        view
+    {
         console2.log("\n=== Blitz Deployment Complete ===");
         console2.log("Contract Address:", blitzAddress);
         console2.log("Deployer:", deployer);
         console2.log("Treasury Address:", treasury);
         console2.log("Battle Duration:", battleDuration / 1 hours, "hours");
-        console2.log("Volume Oracle:", volumeOracle);
+        console2.log("Volume Calculation: Backend-handled");
     }
 }
