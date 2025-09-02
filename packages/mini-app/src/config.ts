@@ -32,5 +32,5 @@ export const config = createConfig({
     [zora.id]: http(),
   },
   connectors,
-  ssr: false,
+  ssr: true,
 });
