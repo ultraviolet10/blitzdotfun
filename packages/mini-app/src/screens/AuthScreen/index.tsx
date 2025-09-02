@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useCrossAppAccounts, usePrivy } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
 import { useMiniApp } from "@neynar/react";
 import zorbSvg from "../../../public/zorb.svg";
 import logoSvg from "../../../public/logo.svg";
@@ -11,12 +11,12 @@ interface AuthScreenProps {
 }
 
 export function AuthScreen({ onContinueWithFarcaster }: AuthScreenProps) {
-  const { ready, authenticated } = usePrivy();
-  const { loginWithCrossAppAccount } = useCrossAppAccounts();
+  const { ready, authenticated, login } = usePrivy();
+  // const { loginWithCrossAppAccount } = useCrossAppAccounts();
   const { context } = useMiniApp();
 
   const handleLogin = () => {
-    loginWithCrossAppAccount({ appId: "clpgf04wn04hnkw0fv1m11mnb" });
+    login();
   };
 
   const handleContinueWithFarcaster = () => {

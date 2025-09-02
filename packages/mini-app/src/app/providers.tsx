@@ -36,7 +36,14 @@ export function Providers({
 
   return (
     <SessionProvider session={session}>
-      <PrivyProvider appId={privyAppId || ""}>
+      <PrivyProvider
+        appId={privyAppId || ""}
+        config={{
+          loginMethodsAndOrder: {
+            primary: ["privy:clpgf04wn04hnkw0fv1m11mnb"],
+          },
+        }}
+      >
         <WagmiProvider>
           <MiniAppProvider
             analyticsEnabled={ANALYTICS_ENABLED}
