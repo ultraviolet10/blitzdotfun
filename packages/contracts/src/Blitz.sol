@@ -167,24 +167,25 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         whenNotPaused
         returns (bytes32 battleId)
     {
+        // OPTIMIZATION: Cheap validations first (fail fast)
         require(playerOne != playerTwo, "Cannot challenge self");
         require(playerOneCoin != address(0) && playerTwoCoin != address(0), "Invalid coin addresses");
 
-        // Check no active battle exists between these players
-        require(activeBattles[playerOne][playerTwo] == 0, "Active battle already exists");
-        require(activeBattles[playerTwo][playerOne] == 0, "Active battle already exists");
+        // OPTIMIZATION: Single mapping check using canonical ordering (50% fewer storage operations)
+        require(_getActiveBattle(playerOne, playerTwo) == 0, "Active battle already exists");
 
-        // Validate stakes and get required amounts
-        uint256 playerOneStake = _validateCreatorStake(playerOne, playerOneCoin);
-        uint256 playerTwoStake = _validateCreatorStake(playerTwo, playerTwoCoin);
+        // OPTIMIZATION: Single call validation with cached balance check
+        ValidationResult memory result1 = _validateCreatorStakeAndBalance(playerOne, playerOneCoin);
+        require(result1.isValid, result1.errorReason);
 
-        // Check contract holds sufficient tokens for both stakes
-        require(
-            IERC20(playerOneCoin).balanceOf(address(this)) >= playerOneStake, "Contract: insufficient player one tokens"
-        );
-        require(
-            IERC20(playerTwoCoin).balanceOf(address(this)) >= playerTwoStake, "Contract: insufficient player two tokens"
-        );
+        ValidationResult memory result2 = _validateCreatorStakeAndBalance(playerTwo, playerTwoCoin);
+        require(result2.isValid, result2.errorReason);
+
+        uint256 playerOneStake = result1.requiredStake;
+        uint256 playerTwoStake = result2.requiredStake;
+
+        // Balance checks already performed in _validateCreatorStakeAndBalance
+        // No need for additional IERC20 balanceOf calls
 
         battleId = generateBattleId(playerOne, playerTwo, block.timestamp);
 
@@ -193,20 +194,20 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         battles[battleId] = Battle({
             battleId: battleId,
             playerOne: playerOne,
+            playerOneStake: uint96(playerOneStake), // Safe: max 50M tokens vs uint96 max ~79B tokens
             playerTwo: playerTwo,
-            state: BattleState.CHALLENGE_PERIOD,
-            startTime: block.timestamp,
-            endTime: block.timestamp + battleDuration,
+            playerTwoStake: uint96(playerTwoStake), // Safe: max 50M tokens vs uint96 max ~79B tokens
             playerOneCoin: playerOneCoin,
+            startTime: uint96(block.timestamp),     // Safe: uint96 good until year 2514
             playerTwoCoin: playerTwoCoin,
-            playerOneStake: playerOneStake,
-            playerTwoStake: playerTwoStake,
-            winner: address(0)
+            endTime: uint96(block.timestamp + battleDuration), // Safe: uint96 good until year 2514
+            winner: address(0),
+            state: BattleState.CHALLENGE_PERIOD,
+            reserved: 0 // Initialize reserved field
         });
 
-        // Track active battle between these players
-        activeBattles[playerOne][playerTwo] = battleId;
-        activeBattles[playerTwo][playerOne] = battleId;
+        // OPTIMIZATION: Single mapping write using canonical ordering (50% gas savings)
+        _setActiveBattle(playerOne, playerTwo, battleId);
 
         // Emit events - tokens are escrowed by contract for this battle
         emit TokensLocked(playerOne, playerOneCoin, playerOneStake, battleId);
@@ -439,7 +440,83 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         return volumeStorage.getTraderActivity(battleId, trader);
     }
 
-    /// @notice Validates that a creator has sufficient balance and returns required stake
+    /// @notice Result of creator stake validation with cached balance
+    struct ValidationResult {
+        uint256 requiredStake;
+        uint256 contractBalance;
+        bool isValid;
+        string errorReason;
+    }
+
+    /// @notice Get canonical battle key (smaller address first) for consistent mapping
+    /// @param playerA First player address
+    /// @param playerB Second player address
+    /// @return first The smaller address (canonical first key)
+    /// @return second The larger address (canonical second key)
+    function _getBattleKey(address playerA, address playerB) internal pure returns (address first, address second) {
+        return playerA < playerB ? (playerA, playerB) : (playerB, playerA);
+    }
+
+    /// @notice Get active battle ID between two players using canonical ordering
+    /// @param playerA First player address
+    /// @param playerB Second player address
+    /// @return battleId The active battle ID, or 0 if none exists
+    function _getActiveBattle(address playerA, address playerB) internal view returns (bytes32) {
+        (address first, address second) = _getBattleKey(playerA, playerB);
+        return activeBattles[first][second];
+    }
+
+    /// @notice Set active battle ID between two players using canonical ordering
+    /// @param playerA First player address
+    /// @param playerB Second player address
+    /// @param battleId The battle ID to set
+    function _setActiveBattle(address playerA, address playerB, bytes32 battleId) internal {
+        (address first, address second) = _getBattleKey(playerA, playerB);
+        activeBattles[first][second] = battleId;
+    }
+
+    /// @notice Validates creator stake and gets contract balance in single call (gas optimized)
+    /// @param creator The creator's address
+    /// @param coinAddress The creator's coin contract address
+    /// @return result Validation result with stake, balance, and validity
+    function _validateCreatorStakeAndBalance(address creator, address coinAddress)
+        internal
+        view
+        returns (ValidationResult memory result)
+    {
+        ICreatorCoin creatorCoin = ICreatorCoin(coinAddress);
+
+        // Verify the creator is the payout recipient of this coin
+        address payoutRecipient = creatorCoin.payoutRecipient();
+        if (payoutRecipient != creator) {
+            result.errorReason = "Creator not coin owner";
+            return result;
+        }
+
+        // Check that the creator has claimable vested amount (indicates active coin)
+        uint256 claimableAmount = creatorCoin.getClaimableAmount();
+        if (claimableAmount == 0) {
+            result.errorReason = "No claimable vested tokens";
+            return result;
+        }
+
+        // Calculate required stake (10% of claimable amount)
+        result.requiredStake = (claimableAmount * 10) / 100;
+        
+        // Get contract balance in same call
+        result.contractBalance = IERC20(coinAddress).balanceOf(address(this));
+        
+        // Check if contract has sufficient balance
+        if (result.contractBalance < result.requiredStake) {
+            result.errorReason = "Contract: insufficient tokens";
+            return result;
+        }
+
+        result.isValid = true;
+        return result;
+    }
+
+    /// @notice Legacy function - kept for backward compatibility
     /// @param creator The creator's address
     /// @param coinAddress The creator's coin contract address
     /// @return requiredStake The amount that needs to be staked (10% of claimable)
@@ -448,23 +525,9 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         view
         returns (uint256 requiredStake)
     {
-        ICreatorCoin creatorCoin = ICreatorCoin(coinAddress);
-
-        // Verify the creator is the payout recipient of this coin
-        require(creatorCoin.payoutRecipient() == creator, "Creator not coin owner"); // coin creator - zora wallet address
-
-        // Check that the creator has claimable vested amount (indicates active coin)
-        // [uv1000] let's here instead ensure that they've inputted 500$ worth of their creator coin
-        uint256 claimableAmount = creatorCoin.getClaimableAmount();
-        require(claimableAmount > 0, "No claimable vested tokens");
-
-        // Calculate required stake (10% of claimable amount)
-        requiredStake = (claimableAmount * 10) / 100;
-
-        // Note: We no longer check creator's direct balance since we're using deposited tokens
-        // The deposited token balance check is done in startContest
-
-        return requiredStake;
+        ValidationResult memory result = _validateCreatorStakeAndBalance(creator, coinAddress);
+        require(result.isValid, result.errorReason);
+        return result.requiredStake;
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
