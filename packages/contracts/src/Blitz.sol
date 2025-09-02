@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.20;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -265,13 +265,12 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
             loserStake = battle.playerOneStake;
         }
 
-        // CRITICAL FIX: Only loser's stake becomes prize pool to prevent phantom tokens
         uint256 prizePool = loserStake;
 
         // Winner gets their stake back immediately via direct transfer
         IERC20(winnerCoin).safeTransfer(winner, winnerStake);
 
-        // Note: Loser's stake remains in contract as funding for prize distribution
+        // note: Loser's stake remains in contract as funding for prize distribution
 
         // Execute three-tier distribution system using library
         BlitzDistribution.distributeTier1WinnerRewards(
