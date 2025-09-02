@@ -59,3 +59,28 @@ export interface ExecutionContext {
     waitUntil(promise: Promise<unknown>): void
     passThroughOnException(): void
 }
+
+/**
+ * Firebase Query Operations
+ */
+export interface FirebaseQuery {
+    orderBy?: string
+    startAt?: string | number
+    endAt?: string | number
+    limitToFirst?: number
+    limitToLast?: number
+    equalTo?: string | number | boolean
+}
+
+/**
+ * Firebase Batch Operations
+ */
+export interface FirebaseBatchOperation {
+    method: "PUT" | "PATCH" | "POST" | "DELETE"
+    path: string
+    body?: FirebaseData
+}
+
+export interface FirebaseBatchResponse {
+    [key: string]: FirebaseData
+}

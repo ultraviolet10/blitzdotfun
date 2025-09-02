@@ -7,7 +7,6 @@ export type CreateBattleInput = {
     creatorTwoCoin: Address
 }
 
-// [uv1000] todo
 export type CreateBattleOutput = {
     battleId: Hex
 }
