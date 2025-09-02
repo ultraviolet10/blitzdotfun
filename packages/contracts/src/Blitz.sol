@@ -219,10 +219,8 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
             reserved: 0 // Initialize reserved field
         });
 
-        // OPTIMIZATION: Single mapping write using canonical ordering (50% gas savings)
         _setActiveBattle(playerOne, playerTwo, battleId);
 
-        // OPTIMIZATION: Single optimized event instead of 3 separate events (5-10K gas savings)
         emit BattleCreated(
             battleId,
             playerOne,
@@ -500,7 +498,6 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         activeBattles[first][second] = battleId;
     }
 
-    /// @notice OPTIMIZATION: Conditionally clear active battle mapping (only if currently set)
     /// @param playerA First player address
     /// @param playerB Second player address
     function _clearActiveBattleConditional(address playerA, address playerB) internal {
@@ -521,7 +518,6 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     {
         ICreatorCoin creatorCoin = ICreatorCoin(coinAddress);
 
-        // OPTIMIZATION: Use stack variables to minimize memory allocation
         address payoutRecipient = creatorCoin.payoutRecipient();
         if (payoutRecipient != creator) {
             result.errorReason = "Creator not coin owner";
