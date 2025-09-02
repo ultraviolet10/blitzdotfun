@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { useCrossAppAccounts, usePrivy } from "@privy-io/react-auth";
 import { useMiniApp } from "@neynar/react";
 import zorbSvg from "../../../public/zorb.svg";
 import logoSvg from "../../../public/logo.svg";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 interface AuthScreenProps {
   onContinueWithFarcaster?: () => void;
@@ -12,7 +13,7 @@ interface AuthScreenProps {
 
 export function AuthScreen({ onContinueWithFarcaster }: AuthScreenProps) {
   const { ready, authenticated, login } = usePrivy();
-  // const { loginWithCrossAppAccount } = useCrossAppAccounts();
+  const { loginWithCrossAppAccount } = useCrossAppAccounts();
   const { context } = useMiniApp();
 
   const handleLogin = () => {
@@ -87,7 +88,7 @@ export function AuthScreen({ onContinueWithFarcaster }: AuthScreenProps) {
         </div>
 
         <div className="font-schibsted-grotesk pb-8 space-y-2">
-          <button
+          {/* <button
             onClick={handleLogin}
             disabled={!ready || authenticated}
             className="w-full px-6 py-4 text-black text-lg font-bold rounded-full disabled:opacity-50"
@@ -103,7 +104,8 @@ export function AuthScreen({ onContinueWithFarcaster }: AuthScreenProps) {
             ) : (
               "Connect with Zora"
             )}
-          </button>
+          </button> */}
+          <ConnectButton />
 
           {/* Farcaster */}
           {hasFarcasterContext && (

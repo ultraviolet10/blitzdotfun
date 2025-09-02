@@ -3,8 +3,9 @@ import { Syne, Schibsted_Grotesk, Dela_Gothic_One, Nunito } from 'next/font/goog
 
 import { getSession } from '~/auth';
 import '~/app/globals.css';
-import { Providers } from '~/app/providers';
+import '@rainbow-me/rainbowkit/styles.css';
 import { APP_NAME, APP_DESCRIPTION } from '~/lib/constants';
+import { ClientProviders } from '~/components/ClientProviders';
 
 // Initialize the Syne font
 const syne = Syne({
@@ -35,6 +36,7 @@ const nunito = Nunito({
   variable: '--font-nunito',
 });
 
+
 export const metadata: Metadata = {
   title: APP_NAME,
   description: APP_DESCRIPTION,
@@ -50,9 +52,9 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${syne.variable} ${schibstedGrotesk.variable} ${delagothicOne.variable} ${nunito.variable}`}>
       <body>
-        <Providers session={session}>
+        <ClientProviders session={session}>
           {children}
-        </Providers>
+        </ClientProviders>
       </body>
     </html>
   );
