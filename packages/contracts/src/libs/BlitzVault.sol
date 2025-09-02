@@ -55,7 +55,6 @@ library BlitzVault {
     struct VaultStorage {
         // Token vault mappings: creator => coinAddress => amount
         mapping(address => mapping(address => uint256)) depositedTokens;
-        mapping(address => mapping(address => uint256)) lockedTokens;
         // Vesting schedules for time-locked winner rewards: user => token => schedule
         mapping(address => mapping(address => VestingSchedule)) vestingSchedules;
         // Timelock withdrawals for loser consolation: user => token => withdrawal
@@ -76,46 +75,6 @@ library BlitzVault {
     // ══════════════════════════════════════════════════════════════════════════════
     // CORE VAULT FUNCTIONS
     // ══════════════════════════════════════════════════════════════════════════════
-
-    /**
-     * @notice Deposit creator tokens into the vault with enhanced security and validation
-     * @dev Implements comprehensive validation including creator ownership verification
-     *
-     * @param self Storage reference for vault state
-     * @param coinAddress The creator coin contract address
-     * @param amount The amount of tokens to deposit
-     * @param depositor The address making the deposit (msg.sender from main contract)
-     */
-    function depositCreatorTokens(VaultStorage storage self, address coinAddress, uint256 amount, address depositor)
-        external
-    {
-        require(coinAddress != address(0), "Invalid coin address");
-        require(depositor != address(0), "Invalid depositor address");
-        require(amount >= MIN_DEPOSIT_AMOUNT, "Amount below minimum deposit threshold");
-
-        ICreatorCoin creatorCoin = ICreatorCoin(coinAddress);
-
-        // Enhanced security: Verify the caller is the payout recipient of this coin
-        require(creatorCoin.payoutRecipient() == depositor, "Not coin owner");
-
-        // Record balance before transfer for security verification
-        uint256 balanceBefore = IERC20(coinAddress).balanceOf(address(this));
-
-        // Execute transfer with SafeERC20 protection
-        IERC20(coinAddress).safeTransferFrom(depositor, address(this), amount);
-
-        // Verify actual transfer amount (protection against fee-on-transfer tokens)
-        uint256 balanceAfter = IERC20(coinAddress).balanceOf(address(this));
-        uint256 actualAmount = balanceAfter - balanceBefore;
-
-        require(actualAmount > 0, "No tokens transferred");
-        require(actualAmount <= amount, "Transfer amount exceeds expectation");
-
-        // Update deposited balance with actual transferred amount
-        self.depositedTokens[depositor][coinAddress] += actualAmount;
-
-        emit TokensDeposited(depositor, coinAddress, actualAmount);
-    }
 
     /**
      * @notice Withdraw available creator tokens from the vault with precision balance management
@@ -330,52 +289,6 @@ library BlitzVault {
             TimelockWithdrawal({amount: amount, unlockTime: block.timestamp + cooldownPeriod});
     }
 
-    /**
-     * @notice Lock tokens from deposited balance for battle participation
-     * @dev Moves tokens from deposited to locked state for contest staking
-     *
-     * @param self Storage reference for vault state
-     * @param user The user whose tokens will be locked
-     * @param tokenAddress The token contract address
-     * @param amount The amount to lock
-     */
-    function lockTokensForBattle(VaultStorage storage self, address user, address tokenAddress, uint256 amount)
-        external
-    {
-        require(user != address(0), "Invalid user address");
-        require(tokenAddress != address(0), "Invalid token address");
-        require(amount > 0, "Amount must be greater than zero");
-
-        require(self.depositedTokens[user][tokenAddress] >= amount, "Insufficient deposited tokens");
-
-        // Move tokens from deposited to locked (checks-effects pattern)
-        self.depositedTokens[user][tokenAddress] -= amount;
-        self.lockedTokens[user][tokenAddress] += amount;
-    }
-
-    /**
-     * @notice Unlock tokens back to deposited balance after battle completion
-     * @dev Moves tokens from locked back to deposited state
-     *
-     * @param self Storage reference for vault state
-     * @param user The user whose tokens will be unlocked
-     * @param tokenAddress The token contract address
-     * @param amount The amount to unlock
-     */
-    function unlockTokensFromBattle(VaultStorage storage self, address user, address tokenAddress, uint256 amount)
-        external
-    {
-        require(user != address(0), "Invalid user address");
-        require(tokenAddress != address(0), "Invalid token address");
-        require(amount > 0, "Amount must be greater than zero");
-
-        require(self.lockedTokens[user][tokenAddress] >= amount, "Insufficient locked tokens");
-
-        // Move tokens from locked back to deposited (checks-effects pattern)
-        self.lockedTokens[user][tokenAddress] -= amount;
-        self.depositedTokens[user][tokenAddress] += amount;
-    }
-
     // ══════════════════════════════════════════════════════════════════════════════
     // VIEW & QUERY FUNCTIONS
     // ══════════════════════════════════════════════════════════════════════════════
@@ -393,21 +306,6 @@ library BlitzVault {
         returns (uint256 balance)
     {
         return self.depositedTokens[user][tokenAddress];
-    }
-
-    /**
-     * @notice Get locked balance for a user and token
-     * @param self Storage reference for vault state
-     * @param user The user address
-     * @param tokenAddress The token contract address
-     * @return balance Locked balance in active battles
-     */
-    function getLockedBalance(VaultStorage storage self, address user, address tokenAddress)
-        external
-        view
-        returns (uint256 balance)
-    {
-        return self.lockedTokens[user][tokenAddress];
     }
 
     /**

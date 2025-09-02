@@ -110,7 +110,7 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     // ══════════════════════════════════════════════════════════════════════════════
     // CONSTANTS & DISTRIBUTION PARAMETERS
     // ══════════════════════════════════════════════════════════════════════════════
-    uint256 public battleDuration = 12 hours; // Configurable battle duration, can be updated by admin
+    uint256 public battleDuration = 12 hours;
     // Tier 1: Winner Rewards (70%)
     uint256 public constant WINNER_LIQUID_BPS = 5000; // 50% immediate liquid
     uint256 public constant WINNER_COLLECTOR_BPS = 1500; // 15% to collectors
@@ -159,24 +159,6 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
-    // VAULT MANAGEMENT FUNCTIONS
-    // ══════════════════════════════════════════════════════════════════════════════
-
-    /// @notice Deposit creator tokens into the vault for future battles
-    /// @param coinAddress The creator coin contract address
-    /// @param amount The amount of tokens to deposit
-    function depositCreatorTokens(address coinAddress, uint256 amount) external nonReentrant {
-        vaultStorage.depositCreatorTokens(coinAddress, amount, msg.sender);
-    }
-
-    /// @notice Withdraw available creator tokens from the vault
-    /// @param coinAddress The creator coin contract address
-    /// @param amount The amount of tokens to withdraw (0 = withdraw all available)
-    function withdrawCreatorTokens(address coinAddress, uint256 amount) external nonReentrant {
-        vaultStorage.withdrawCreatorTokens(coinAddress, amount, msg.sender);
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════════
     // CORE BATTLE FUNCTIONS
     // ══════════════════════════════════════════════════════════════════════════════
 
@@ -196,21 +178,17 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         uint256 playerOneStake = _validateCreatorStake(playerOne, playerOneCoin);
         uint256 playerTwoStake = _validateCreatorStake(playerTwo, playerTwoCoin);
 
-        // Check deposited tokens are sufficient
+        // Check contract holds sufficient tokens for both stakes
         require(
-            vaultStorage.getAvailableBalance(playerOne, playerOneCoin) >= playerOneStake,
-            "Player one: insufficient deposited tokens"
+            IERC20(playerOneCoin).balanceOf(address(this)) >= playerOneStake, "Contract: insufficient player one tokens"
         );
         require(
-            vaultStorage.getAvailableBalance(playerTwo, playerTwoCoin) >= playerTwoStake,
-            "Player two: insufficient deposited tokens"
+            IERC20(playerTwoCoin).balanceOf(address(this)) >= playerTwoStake, "Contract: insufficient player two tokens"
         );
 
         battleId = generateBattleId(playerOne, playerTwo, block.timestamp);
 
-        // Lock tokens by moving from deposited to locked using vault library
-        vaultStorage.lockTokensForBattle(playerOne, playerOneCoin, playerOneStake);
-        vaultStorage.lockTokensForBattle(playerTwo, playerTwoCoin, playerTwoStake);
+        // Note: Tokens are held directly by contract, no vault locking needed
 
         battles[battleId] = Battle({
             battleId: battleId,
@@ -230,12 +208,12 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         activeBattles[playerOne][playerTwo] = battleId;
         activeBattles[playerTwo][playerOne] = battleId;
 
-        // Emit lock events
+        // Emit events - tokens are escrowed by contract for this battle
         emit TokensLocked(playerOne, playerOneCoin, playerOneStake, battleId);
         emit TokensLocked(playerTwo, playerTwoCoin, playerTwoStake, battleId);
         emit BattleCreated(uint256(battleId), playerOne, playerTwo);
 
-        return battleId;
+        return battleId; // [uv1000] store in db?
     }
 
     /// @notice End a contest and distribute prizes using enhanced multi-tier system
@@ -246,8 +224,8 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     /// @param collectorBalances Array of token balances for each collector
     function endContest(
         bytes32 battleId,
-        uint256 playerOneScore,
-        uint256 playerTwoScore,
+        uint256 playerOneScore, // [uv1000] offchain!
+        uint256 playerTwoScore, // [uv1000] offchain!
         address[] calldata topCollectors,
         uint256[] calldata collectorBalances
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -256,11 +234,11 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         // Validate battle exists and timing
         require(battle.startTime > 0, "Battle does not exist");
         require(battle.state == BattleState.CHALLENGE_PERIOD, "Battle not in active state");
-        require(block.timestamp >= battle.endTime, "Contest still ongoing");
+        require(block.timestamp > battle.endTime, "Contest still ongoing");
 
         // Validate collector arrays
-        require(topCollectors.length == collectorBalances.length, "Array length mismatch");
-        require(topCollectors.length <= 100, "Too many collectors"); // Gas limit protection
+        require(topCollectors.length == collectorBalances.length, "Array length mismatch"); // [uv1000] don't think we need this
+        require(topCollectors.length <= 100, "Too many collectors"); // Gas limit protection // [uv1000] also not ideal
         require(playerOneScore != playerTwoScore, "Tie scores not allowed - contest invalid");
 
         // Determine winner and loser
@@ -287,12 +265,13 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
             loserStake = battle.playerOneStake;
         }
 
-        // Calculate total prize pool
-        uint256 totalPool = winnerStake + loserStake;
+        // CRITICAL FIX: Only loser's stake becomes prize pool to prevent phantom tokens
+        uint256 prizePool = loserStake;
 
-        // CRITICAL: Unlock tokens from locked state first using vault library
-        vaultStorage.unlockTokensFromBattle(winner, winnerCoin, winnerStake);
-        vaultStorage.unlockTokensFromBattle(loser, loserCoin, loserStake);
+        // Winner gets their stake back immediately via direct transfer
+        IERC20(winnerCoin).safeTransfer(winner, winnerStake);
+
+        // Note: Loser's stake remains in contract as funding for prize distribution
 
         // Execute three-tier distribution system using library
         BlitzDistribution.distributeTier1WinnerRewards(
@@ -302,7 +281,7 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
             winner,
             winnerCoin,
             loserCoin,
-            totalPool,
+            prizePool,
             topCollectors,
             collectorBalances,
             WINNER_LIQUID_BPS,
@@ -318,7 +297,7 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
             winner,
             winnerCoin,
             loserCoin,
-            totalPool,
+            prizePool,
             FLYWHEEL_FEES_BPS,
             FLYWHEEL_BOOST_BPS
         );
@@ -330,7 +309,7 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
             battleId,
             loser,
             loserCoin,
-            totalPool,
+            prizePool,
             LOSER_CONSOLATION_BPS,
             TRADER_INCENTIVE_BPS,
             PROTOCOL_TREASURY_BPS,
@@ -370,6 +349,17 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
     /// @param tokenAddress The token contract address to claim from
     function claimVestedTokens(address tokenAddress) external nonReentrant {
         vaultStorage.claimVestedTokens(tokenAddress, msg.sender);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // VAULT MANAGEMENT FUNCTIONS
+    // ══════════════════════════════════════════════════════════════════════════════
+
+    /// @notice Withdraw available creator tokens from the vault
+    /// @param coinAddress The creator coin contract address
+    /// @param amount The amount of tokens to withdraw (0 = withdraw all available)
+    function withdrawCreatorTokens(address coinAddress, uint256 amount) external nonReentrant {
+        vaultStorage.withdrawCreatorTokens(coinAddress, amount, msg.sender);
     }
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -462,7 +452,7 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         ICreatorCoin creatorCoin = ICreatorCoin(coinAddress);
 
         // Verify the creator is the payout recipient of this coin
-        require(creatorCoin.payoutRecipient() == creator, "Creator not coin owner");
+        require(creatorCoin.payoutRecipient() == creator, "Creator not coin owner"); // coin creator - zora wallet address
 
         // Check that the creator has claimable vested amount (indicates active coin)
         // [uv1000] let's here instead ensure that they've inputted 500$ worth of their creator coin
@@ -649,9 +639,9 @@ contract Blitz is AccessControl, ReentrancyGuard, Pausable {
         require(battle.startTime > 0, "Battle does not exist");
         require(battle.state == BattleState.CHALLENGE_PERIOD, "Battle not active");
 
-        // Unlock tokens back to creators using vault library
-        vaultStorage.unlockTokensFromBattle(battle.playerOne, battle.playerOneCoin, battle.playerOneStake);
-        vaultStorage.unlockTokensFromBattle(battle.playerTwo, battle.playerTwoCoin, battle.playerTwoStake);
+        // Return tokens directly to creators (contract holds tokens directly now)
+        IERC20(battle.playerOneCoin).safeTransfer(battle.playerOne, battle.playerOneStake);
+        IERC20(battle.playerTwoCoin).safeTransfer(battle.playerTwo, battle.playerTwoStake);
 
         // Update battle state
         battle.state = BattleState.CANCELLED;
