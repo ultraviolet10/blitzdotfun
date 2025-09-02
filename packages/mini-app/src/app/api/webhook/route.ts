@@ -55,37 +55,37 @@ export async function POST(request: NextRequest) {
 
   // Only handle notifications if Neynar is not enabled
   // When Neynar is enabled, notifications are handled through their webhook
-  switch (event.event) {
-    case "frame_added":
-      if (event.notificationDetails) {
-        await setUserNotificationDetails(fid, event.notificationDetails);
-        await sendMiniAppNotification({
-          fid,
-          title: `Welcome to ${APP_NAME}`,
-          body: "Mini app is now added to your client",
-        });
-      } else {
-        await deleteUserNotificationDetails(fid);
-      }
-      break;
+  // switch (event.event) {
+  //   case "frame_added":
+  //     if (event.notificationDetails) {
+  //       await setUserNotificationDetails(fid, event.notificationDetails);
+  //       await sendMiniAppNotification({
+  //         fid,
+  //         title: `Welcome to ${APP_NAME}`,
+  //         body: "Mini app is now added to your client",
+  //       });
+  //     } else {
+  //       await deleteUserNotificationDetails(fid);
+  //     }
+  //     break;
 
-    case "frame_removed":
-      await deleteUserNotificationDetails(fid);
-      break;
+  //   case "frame_removed":
+  //     await deleteUserNotificationDetails(fid);
+  //     break;
 
-    case "notifications_enabled":
-      await setUserNotificationDetails(fid, event.notificationDetails);
-      await sendMiniAppNotification({
-        fid,
-        title: `Welcome to ${APP_NAME}`,
-        body: "Notifications are now enabled",
-      });
-      break;
+  //   case "notifications_enabled":
+  //     await setUserNotificationDetails(fid, event.notificationDetails);
+  //     await sendMiniAppNotification({
+  //       fid,
+  //       title: `Welcome to ${APP_NAME}`,
+  //       body: "Notifications are now enabled",
+  //     });
+  //     break;
 
-    case "notifications_disabled":
-      await deleteUserNotificationDetails(fid);
-      break;
-  }
+  //   case "notifications_disabled":
+  //     await deleteUserNotificationDetails(fid);
+  //     break;
+  // }
 
   return Response.json({ success: true });
 }
