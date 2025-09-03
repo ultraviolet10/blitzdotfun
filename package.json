@@ -18,5 +18,8 @@
   },
   "trustedDependencies": [
     "node-jq"
-  ]
+  ],
+  "dependencies": {
+    "firebase-admin": "^13.5.0"
+  }
 }

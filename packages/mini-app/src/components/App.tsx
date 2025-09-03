@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMiniApp } from "@neynar/react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useContests } from "~/hooks/useContests";
 import { PreContestScreen } from "~/screens/PreContestScreen";
 import { OngoingContestScreen } from "~/screens/OngoingContestScreen";
 import { ContestEndedScreen } from "~/screens/ContestEndedScreen";
@@ -41,7 +42,21 @@ export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
   // --- Hooks ---
   const { isSDKLoaded, context } = useMiniApp();
   const { ready, authenticated } = usePrivy();
+  const { contests: _contests, loading: contestsLoading, error: _contestsError, isParticipant, userContest: _userContest } = useContests();
   const [currentScreen, setCurrentScreen] = useState<ScreenType>("pre-contest");
+  const [initialScreenSet, setInitialScreenSet] = useState(false);
+
+  // Set initial screen based on contest participation
+  useEffect(() => {
+    if (authenticated && ready && !contestsLoading && !initialScreenSet) {
+      if (isParticipant) {
+        setCurrentScreen("welcome");
+      } else {
+        setCurrentScreen("pre-contest");
+      }
+      setInitialScreenSet(true);
+    }
+  }, [authenticated, ready, contestsLoading, isParticipant, initialScreenSet]);
 
   // --- Early Returns ---
   if (!isSDKLoaded) {
@@ -67,6 +82,18 @@ export default function App({ title: _title }: AppProps = { title: "Blitz" }) {
         }}
       >
         <AuthScreen />
+      </div>
+    );
+  }
+
+  // Show loading screen while fetching contests
+  if (contestsLoading && !initialScreenSet) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-white">
+        <div className="text-center">
+          <div className="w-8 h-8 mx-auto mb-4 border-4 border-gray-300 border-t-green-500 rounded-full animate-spin"></div>
+          <p className="text-gray-600">Checking contest participation...</p>
+        </div>
       </div>
     );
   }

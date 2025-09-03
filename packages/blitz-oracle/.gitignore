@@ -32,3 +32,5 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+.blitzdotfun-firebase-adminsdk-fbsvc-0414a787a7.json

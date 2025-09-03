@@ -20,10 +20,47 @@ export type ContestStatus =
     | "completed"
     | "forfeited"
 
+export interface ZoraProfileData {
+    id?: string
+    handle?: string
+    displayName?: string
+    bio?: string
+    username?: string
+    website?: string
+    avatar?: {
+        small?: string
+        medium?: string
+        blurhash?: string
+    }
+    publicWallet?: {
+        walletAddress?: string
+    }
+    socialAccounts?: {
+        instagram?: { username?: string; displayName?: string }
+        tiktok?: { username?: string; displayName?: string }
+        twitter?: { username?: string; displayName?: string }
+        farcaster?: { username?: string; displayName?: string }
+    }
+    linkedWallets?: {
+        edges?: Array<{
+            node?: {
+                walletType?: "PRIVY" | "EXTERNAL" | "SMART_WALLET"
+                walletAddress?: string
+            }
+        }>
+    }
+    creatorCoin?: {
+        address?: string
+        marketCap?: string
+        marketCapDelta24h?: string
+    }
+}
+
 export interface ContestParticipant {
     handle: string
     walletAddress: Address
     zoraProfile?: string
+    zoraProfileData?: ZoraProfileData | null
 }
 
 export interface DepositStatus {
