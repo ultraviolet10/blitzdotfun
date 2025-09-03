@@ -9,7 +9,7 @@ import type {
 } from "../types/mini-app-api"
 
 /**
- * Transform legacy Contest type to Firebase-optimized structure
+ * Transform Contest type to Firebase-optimized structure
  */
 export function contestToFirebase(contest: Contest): FirebaseContest {
     const participantAddresses = [contest.participantOne.walletAddress, contest.participantTwo.walletAddress]
@@ -37,7 +37,11 @@ export function contestToFirebase(contest: Contest): FirebaseContest {
 
                 deposits: contest.deposits[contest.participantOne.walletAddress] || { detected: false },
 
-                contentPosts: contest.contentPosts[contest.participantOne.walletAddress] || { detected: false },
+                contentPosts: contest.contentStatus[contest.participantOne.walletAddress] ? {
+                    detected: contest.contentStatus[contest.participantOne.walletAddress].detected,
+                    zoraPostUrl: contest.contentStatus[contest.participantOne.walletAddress].zoraPostUrl,
+                    timestamp: contest.contentStatus[contest.participantOne.walletAddress].timestamp
+                } : { detected: false },
 
                 battle: {
                     canPurchase: false, // Creators can't purchase their own content
@@ -53,7 +57,11 @@ export function contestToFirebase(contest: Contest): FirebaseContest {
 
                 deposits: contest.deposits[contest.participantTwo.walletAddress] || { detected: false },
 
-                contentPosts: contest.contentPosts[contest.participantTwo.walletAddress] || { detected: false },
+                contentPosts: contest.contentStatus[contest.participantTwo.walletAddress] ? {
+                    detected: contest.contentStatus[contest.participantTwo.walletAddress].detected,
+                    zoraPostUrl: contest.contentStatus[contest.participantTwo.walletAddress].zoraPostUrl,
+                    timestamp: contest.contentStatus[contest.participantTwo.walletAddress].timestamp
+                } : { detected: false },
 
                 battle: {
                     canPurchase: false, // Creators can't purchase their own content
@@ -84,7 +92,7 @@ export function contestToFirebase(contest: Contest): FirebaseContest {
                   coin1Price: 0,
                   coin2Price: 0,
                   depositsCompleted: Object.values(contest.deposits).filter((d) => d.detected).length,
-                  contentSubmitted: Object.values(contest.contentPosts).filter((c) => c.detected).length,
+                  contentSubmitted: Object.values(contest.contentStatus).filter((c) => c.detected).length,
                   readyForBattle: contest.status === "active_battle" || contest.status === "completed",
               }
             : {
@@ -98,7 +106,7 @@ export function contestToFirebase(contest: Contest): FirebaseContest {
                   coin1Price: 0,
                   coin2Price: 0,
                   depositsCompleted: Object.values(contest.deposits).filter((d) => d.detected).length,
-                  contentSubmitted: Object.values(contest.contentPosts).filter((c) => c.detected).length,
+                  contentSubmitted: Object.values(contest.contentStatus).filter((c) => c.detected).length,
                   readyForBattle: false,
               },
 
@@ -111,7 +119,7 @@ export function contestToFirebase(contest: Contest): FirebaseContest {
 }
 
 /**
- * Transform Firebase contest back to legacy Contest type
+ * Transform Firebase contest back to Contest type
  */
 export function firebaseToContest(firebaseContest: FirebaseContest): Contest {
     const participantAddresses = Object.keys(firebaseContest.participants)
@@ -151,9 +159,19 @@ export function firebaseToContest(firebaseContest: FirebaseContest): Contest {
             [addr2]: participant2.deposits,
         },
 
-        contentPosts: {
-            [addr1]: participant1.contentPosts,
-            [addr2]: participant2.contentPosts,
+        contentStatus: {
+            [addr1]: {
+                detected: participant1.contentPosts.detected,
+                verified: true,
+                zoraPostUrl: participant1.contentPosts.zoraPostUrl,
+                timestamp: participant1.contentPosts.timestamp
+            },
+            [addr2]: {
+                detected: participant2.contentPosts.detected,
+                verified: true,
+                zoraPostUrl: participant2.contentPosts.zoraPostUrl,
+                timestamp: participant2.contentPosts.timestamp
+            }
         },
 
         battleId: firebaseContest.battle?.battleId,

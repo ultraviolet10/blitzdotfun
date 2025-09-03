@@ -1,0 +1,48 @@
+name = "blitz-oracle"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment variables
+[vars]
+NODE_ENV = "production"
+
+# Scheduled cron jobs for contest monitoring
+[[triggers.crons]]
+# Monitor contests every 30 seconds for active monitoring
+cron = "*/30 * * * * *"
+route = "/cron/monitor-contests"
+
+[[triggers.crons]]
+# Fallback monitoring every 2 minutes for reliability
+cron = "*/2 * * * *"
+route = "/cron/monitor-contests"
+
+[[triggers.crons]]
+# Health check every 5 minutes
+cron = "*/5 * * * *"
+route = "/cron/health"
+
+# KV namespaces for caching (optional)
+[[kv_namespaces]]
+binding = "CONTEST_CACHE"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+# Durable Objects for real-time features (optional)
+[[durable_objects.bindings]]
+name = "CONTEST_MONITOR"
+class_name = "ContestMonitor"
+
+# Environment-specific configurations
+[env.development]
+name = "blitz-oracle-dev"
+vars = { NODE_ENV = "development" }
+
+[env.staging]
+name = "blitz-oracle-staging"
+vars = { NODE_ENV = "staging" }
+
+[env.production]
+name = "blitz-oracle-prod"
+vars = { NODE_ENV = "production" }

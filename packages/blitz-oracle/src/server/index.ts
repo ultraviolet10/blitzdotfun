@@ -6,6 +6,7 @@ import { timeout as timeoutMiddleware } from "hono/timeout";
 
 // [uv1000] api routes
 import battleRoutes from "./battleRoute";
+import { cronApp } from "../handlers/cron/contestCronRoutes";
 
 const app = new Hono()
   .use(
@@ -33,6 +34,7 @@ const app = new Hono()
 
 // Mount routes
 app.route("/battle", battleRoutes);
+app.route("/cron", cronApp);
 
 // Landing Page
 app.get("/", (c) => {

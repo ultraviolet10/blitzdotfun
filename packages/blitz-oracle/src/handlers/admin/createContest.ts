@@ -1,4 +1,8 @@
-import type { Contest, CreateContestInput } from "../create/types";
+import type {
+  Contest,
+  CreateContestInput,
+  ContestStatus,
+} from "../create/types";
 import { createFirebaseService } from "../../services/firebase";
 import type { CloudflareBindings } from "../../types/env";
 import { fetchZoraProfile } from "../../services/zora";
@@ -7,8 +11,17 @@ import { fetchZoraProfile } from "../../services/zora";
 const contests = new Map<string, Contest>();
 
 export async function createContest(
-  input: CreateContestInput
+  input: CreateContestInput,
+  env?: CloudflareBindings
 ): Promise<Contest> {
+  // Check for existing active contests before creating a new one
+  const activeContest = await getActiveContest(env);
+  if (activeContest) {
+    throw new Error(
+      `Cannot create new contest. Active contest already exists: ${activeContest.contestId} (${activeContest.name})`
+    );
+  }
+
   const contestId = `${input.name
     .toLowerCase()
     .replace(/\s+/g, "-")}-${Date.now()}`;
@@ -33,7 +46,7 @@ export async function createContest(
   const contest: Contest = {
     contestId,
     name: input.name,
-    status: "created",
+    status: "awaiting_deposits",
     participantOne: {
       ...input.participantOne,
       zoraProfileData: participantOneProfileData,
@@ -48,9 +61,9 @@ export async function createContest(
       [input.participantOne.walletAddress]: { detected: false },
       [input.participantTwo.walletAddress]: { detected: false },
     },
-    contentPosts: {
-      [input.participantOne.walletAddress]: { detected: false },
-      [input.participantTwo.walletAddress]: { detected: false },
+    contentStatus: {
+      [input.participantOne.walletAddress]: { detected: false, verified: false },
+      [input.participantTwo.walletAddress]: { detected: false, verified: false },
     },
   };
 
@@ -117,6 +130,106 @@ export async function getAllContests(
     );
     // Fallback to in-memory storage
     return Array.from(contests.values());
+  }
+}
+
+/**
+ * Get the currently active contest (if any)
+ * A contest is considered active if its status is not 'completed' or 'forfeited'
+ */
+export async function getActiveContest(
+  env?: CloudflareBindings
+): Promise<Contest | null> {
+  try {
+    const allContests = await getAllContests(env || ({} as CloudflareBindings));
+
+    // Find contests that are not completed or forfeited
+    const activeContests = allContests.filter(
+      (contest) =>
+        contest.status !== "completed" && contest.status !== "forfeited"
+    );
+
+    // Return the most recent active contest (if any)
+    if (activeContests.length > 0) {
+      return activeContests.sort((a, b) => b.createdAt - a.createdAt)[0];
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error getting active contest:", error);
+    return null;
+  }
+}
+
+/**
+ * Mark a contest as completed, allowing new contests to be created
+ */
+export async function completeContest(
+  contestId: string,
+  env: CloudflareBindings
+): Promise<boolean> {
+  try {
+    const contest = await getContest(contestId, env);
+    if (!contest) {
+      throw new Error(`Contest ${contestId} not found`);
+    }
+
+    contest.status = "completed";
+    contests.set(contestId, contest);
+
+    // Update in Firebase if available
+    try {
+      const firebaseService = createFirebaseService(env);
+      await firebaseService.updateData(`contests/${contestId}`, {
+        status: "completed",
+      });
+    } catch (firebaseError) {
+      console.warn(
+        "Failed to update contest status in Firebase:",
+        firebaseError
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error completing contest:", error);
+    return false;
+  }
+}
+
+/**
+ * Mark a contest as forfeited, allowing new contests to be created
+ */
+export async function forfeitContest(
+  contestId: string,
+  env: CloudflareBindings
+): Promise<boolean> {
+  try {
+    const contest = await getContest(contestId, env);
+    if (!contest) {
+      throw new Error(`Contest ${contestId} not found`);
+    }
+
+    contest.status = "forfeited";
+    contests.set(contestId, contest);
+
+    // Update in Firebase if available
+    try {
+      const firebaseService = createFirebaseService(env);
+      await firebaseService.updateData(`contests/${contestId}`, {
+        status: "forfeited",
+      });
+    } catch (firebaseError) {
+      console.warn(
+        "Failed to update contest status in Firebase:",
+        firebaseError
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error forfeiting contest:", error);
+    return false;
   }
 }
 

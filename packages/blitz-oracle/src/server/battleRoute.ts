@@ -3,10 +3,13 @@ import {
   createContest,
   getAllContests,
   getContest,
+  getActiveContest,
+  completeContest,
+  forfeitContest,
 } from "../handlers/admin/createContest";
 import { createContestBodyValidation } from "../handlers/create/contestValidation";
 import { createNewBattle } from "../handlers/create/createBattle";
-import { createBattleBodyValidation } from "../handlers/create/validation";
+import { createBattleBodyValidation } from "../handlers/create/contestValidation";
 import { checkContestDeposits } from "../services/depositMonitor";
 import { createFirebaseService } from "../services/firebase";
 import type { CloudflareBindings } from "../types/env";
@@ -22,7 +25,7 @@ app.post(
   createBattleBodyValidation,
   async (c) => {
     const input = c.req.valid("json");
-    const output = await createNewBattle(input);
+    const output = await createNewBattle(input, c.env);
 
     return c.json({ success: true, battleId: output.battleId });
   }
@@ -32,7 +35,7 @@ app.post(
 app.post("/admin/contests", createContestBodyValidation, async (c) => {
   try {
     const input = c.req.valid("json");
-    const contest = await createContest(input);
+    const contest = await createContest(input, c.env);
 
     // Try to store contest data in Firebase, but don't fail if Firebase isn't configured
     try {
@@ -100,167 +103,145 @@ app.get("/admin/contests/:contestId", async (c) => {
   }
 });
 
+// Get the currently active contest
+app.get("/admin/contests/active", async (c) => {
+  try {
+    const activeContest = await getActiveContest(c.env);
+    
+    if (!activeContest) {
+      return c.json({ success: true, activeContest: null, message: "No active contest found" });
+    }
+    
+    return c.json({ success: true, activeContest });
+  } catch (error) {
+    console.error("Error getting active contest:", error);
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      500
+    );
+  }
+});
+
+// Complete a contest (mark as finished)
+app.patch("/admin/contests/:contestId/complete", async (c) => {
+  try {
+    const contestId = c.req.param("contestId");
+    const success = await completeContest(contestId, c.env);
+    
+    if (!success) {
+      return c.json({ success: false, error: "Failed to complete contest" }, 500);
+    }
+    
+    return c.json({ success: true, message: `Contest ${contestId} marked as completed` });
+  } catch (error) {
+    console.error("Error completing contest:", error);
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      500
+    );
+  }
+});
+
+// Forfeit a contest (mark as forfeited)
+app.patch("/admin/contests/:contestId/forfeit", async (c) => {
+  try {
+    const contestId = c.req.param("contestId");
+    const success = await forfeitContest(contestId, c.env);
+    
+    if (!success) {
+      return c.json({ success: false, error: "Failed to forfeit contest" }, 500);
+    }
+    
+    return c.json({ success: true, message: `Contest ${contestId} marked as forfeited` });
+  } catch (error) {
+    console.error("Error forfeiting contest:", error);
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      500
+    );
+  }
+});
+
 // Cron job endpoint for deposit monitoring
 app.post("/cron/check-deposits", async (c) => {
   try {
-    await checkContestDeposits();
-    return c.json({ success: true, message: "Deposit check completed" });
+    const startTime = Date.now();
+    console.log("🔍 Starting deposit monitoring cron job...");
+    
+    await checkContestDeposits(c.env);
+    
+    const duration = Date.now() - startTime;
+    console.log(`✅ Deposit monitoring completed in ${duration}ms`);
+    
+    return c.json({ 
+      success: true, 
+      message: "Deposit monitoring completed",
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
-    console.error("Cron job error:", error);
+    console.error("Deposit monitoring cron job error:", error);
     return c.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
       },
       500
     );
   }
 });
 
-// Test endpoint for Firebase configuration
-app.get("/test-firebase", async (c) => {
+// Endpoint for mini-app to check contest status updates
+app.get("/contest/status", async (c) => {
   try {
-    const firebaseService = createFirebaseService(c.env);
-    const isConnected = await firebaseService.testConnection();
-
-    if (isConnected) {
-      return c.json({
-        success: true,
-        message: "Firebase configuration is valid and connected",
+    const activeContest = await getActiveContest(c.env);
+    
+    if (!activeContest) {
+      return c.json({ 
+        success: true, 
+        status: "no_active_contest",
+        message: "No active contest found" 
       });
-    } else {
-      return c.json(
-        {
-          success: false,
-          error: "Firebase connection test failed",
-        },
-        500
-      );
     }
-  } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      500
-    );
-  }
-});
-
-// Test endpoint for Firebase CRUD operations
-app.get("/test-firebase-crud", async (c) => {
-  try {
-    const firebaseService = createFirebaseService(c.env);
-
-    // Test data
-    const testData = {
-      message: "Hello Firebase!",
-      timestamp: Date.now(),
-      testId: Math.random().toString(36).substring(7),
-    };
-
-    // Test write
-    console.log("Testing Firebase write...");
-    await firebaseService.writeData("test/crud", testData);
-
-    // Test read
-    console.log("Testing Firebase read...");
-    const readResult = await firebaseService.readData("test/crud");
-
-    // Test update
-    console.log("Testing Firebase update...");
-    await firebaseService.updateData("test/crud", {
-      updated: true,
-      updateTime: Date.now(),
-    });
-
-    // Test read updated data
-    const updatedResult = await firebaseService.readData("test/crud");
-
-    // Clean up - delete test data
-    console.log("Cleaning up test data...");
-    await firebaseService.deleteData("test/crud");
-
-    return c.json({
+    
+    // Return contest status with deposit information for mini-app
+    const response = {
       success: true,
-      message: "Firebase CRUD operations completed successfully",
-      testResults: {
-        originalData: readResult,
-        updatedData: updatedResult,
-      },
-    });
+      contest: {
+        contestId: activeContest.contestId,
+        name: activeContest.name,
+        status: activeContest.status,
+        participantOne: {
+          handle: activeContest.participantOne.handle,
+          walletAddress: activeContest.participantOne.walletAddress,
+          depositDetected: activeContest.deposits[activeContest.participantOne.walletAddress]?.detected || false,
+          depositTimestamp: activeContest.deposits[activeContest.participantOne.walletAddress]?.timestamp
+        },
+        participantTwo: {
+          handle: activeContest.participantTwo.handle,
+          walletAddress: activeContest.participantTwo.walletAddress,
+          depositDetected: activeContest.deposits[activeContest.participantTwo.walletAddress]?.detected || false,
+          depositTimestamp: activeContest.deposits[activeContest.participantTwo.walletAddress]?.timestamp
+        },
+        allDepositsReceived: Object.values(activeContest.deposits).every(deposit => deposit.detected),
+        contentDeadline: activeContest.contentDeadline,
+        battleEndTime: activeContest.battleEndTime
+      }
+    };
+    
+    return c.json(response);
   } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      500
-    );
-  }
-});
-
-// Individual Firebase operation test endpoints
-app.post("/test/firebase/write", async (c) => {
-  try {
-    const firebaseService = createFirebaseService(c.env);
-    const data = await c.req.json();
-    await firebaseService.writeData("test/manual", data);
-    return c.json({ success: true, message: "Data written successfully" });
-  } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      500
-    );
-  }
-});
-
-app.get("/test/firebase/read/:path", async (c) => {
-  try {
-    const firebaseService = createFirebaseService(c.env);
-    const path = c.req.param("path");
-    const result = await firebaseService.readData(`test/${path}`);
-    return c.json({ success: true, data: result });
-  } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      500
-    );
-  }
-});
-
-app.patch("/test/firebase/update/:path", async (c) => {
-  try {
-    const firebaseService = createFirebaseService(c.env);
-    const path = c.req.param("path");
-    const data = await c.req.json();
-    await firebaseService.updateData(`test/${path}`, data);
-    return c.json({ success: true, message: "Data updated successfully" });
-  } catch (error) {
-    return c.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      500
-    );
-  }
-});
-
-app.delete("/test/firebase/delete/:path", async (c) => {
-  try {
-    const firebaseService = createFirebaseService(c.env);
-    const path = c.req.param("path");
-    await firebaseService.deleteData(`test/${path}`);
-    return c.json({ success: true, message: "Data deleted successfully" });
-  } catch (error) {
+    console.error("Error getting contest status:", error);
     return c.json(
       {
         success: false,
@@ -272,27 +253,3 @@ app.delete("/test/firebase/delete/:path", async (c) => {
 });
 
 export default app;
-
-/**
- * post - /endOngoingBattle
- * needs to be called when a cron job understands that the 12 / 24 hour contest is up
- * calls `endContest` on Blitz.sol
- */
-
-/**
- * get - /getCurrentBattleStats
- * needs to be called when a cron job understands that the 12 / 24 hour contest is up
- * calls `endContest` on Blitz.sol
- */
-
-/**
- * get - /getCreatorDetails
- * needs to be called when a cron job understands that the 12 / 24 hour contest is up
- * calls `endContest` on Blitz.sol
- */
-
-/**
- * get - /getCreatorContentCoinForBattle
- * needs to be called when a cron job understands that the 12 / 24 hour contest is up
- * calls `endContest` on Blitz.sol
- */
