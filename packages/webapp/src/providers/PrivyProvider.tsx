@@ -10,7 +10,7 @@ interface PrivyProviderWrapperProps {
 export function PrivyProviderWrapper({ children }: PrivyProviderWrapperProps) {
   return (
     <PrivyProvider
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+      appId={process.env.PRIVY_APP_ID!}
       config={{
         appearance: {
           theme: "dark",
