@@ -1,103 +1,173 @@
+"use client";
+
+import { AuthGuard } from "@/components/AuthGuard";
+import { usePrivy } from "@privy-io/react-auth";
 import Image from "next/image";
+import { useState } from "react";
+import blitzLogo from "@/assets/blitzLogo.svg";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <AuthGuard>
+      <Dashboard />
+    </AuthGuard>
+  );
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+function Dashboard() {
+  const { user, logout } = usePrivy();
+  const [showDebug, setShowDebug] = useState(true);
+
+  // Helper function to get wallet address from different sources
+  const getWalletAddress = () => {
+    // First check direct wallet connection
+    if (user?.wallet?.address) {
+      return user.wallet.address;
+    }
+
+    // Check for cross_app linked accounts (Zora login)
+    const crossAppAccount = user?.linkedAccounts?.find(
+      (account) => account.type === "cross_app"
+    );
+    if (crossAppAccount?.smartWallets?.[0]?.address) {
+      return crossAppAccount.smartWallets[0].address;
+    }
+
+    return null;
+  };
+
+  // Helper function to get wallet type
+  const getWalletType = () => {
+    if (user?.wallet?.walletClientType) {
+      return user.wallet.walletClientType;
+    }
+
+    const crossAppAccount = user?.linkedAccounts?.find(
+      (account) => account.type === "cross_app"
+    );
+    if (crossAppAccount) {
+      return "Cross-app (Smart Wallet)";
+    }
+
+    return "Unknown";
+  };
+
+  const walletAddress = getWalletAddress();
+  const walletType = getWalletType();
+
+  return (
+    <div className="min-h-screen bg-[#121212]">
+      <div className="container mx-auto px-4 py-8">
+        <header className="flex justify-between items-center mb-12">
+          <div className="flex items-center gap-4">
+            <Image src={blitzLogo} alt="Blitz Logo" width={50} height={50} />
+            <h1 className="text-3xl font-bold text-[#67CE67]">Blitz</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-white">
+              Welcome,{" "}
+              {walletAddress
+                ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                : "Guest"}
+            </div>
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="px-4 py-2 text-sm font-medium text-black bg-[#67CE67] hover:bg-[#58B958] rounded-lg transition-colors"
+            >
+              {showDebug ? "Hide" : "Show"} Debug
+            </button>
+            <button
+              onClick={logout}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg hover:bg-[#2A2A2A] transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        </header>
+
+        <main className="max-w-4xl mx-auto space-y-8">
+          {/* User Profile Section */}
+          <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-8">
+            <h2 className="text-2xl font-semibold text-[#67CE67] mb-6">
+              User Profile
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
+                    Wallet Address
+                  </label>
+                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg font-mono text-sm break-all">
+                    {walletAddress || "Not connected"}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
+                    Wallet Type
+                  </label>
+                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg">
+                    {walletType}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
+                    Wallet Connected
+                  </label>
+                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg">
+                    {walletAddress ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
+                    User ID
+                  </label>
+                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg font-mono text-sm break-all">
+                    {user?.id || "Not available"}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
+                    Created At
+                  </label>
+                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg">
+                    {user?.createdAt
+                      ? new Date(user.createdAt).toLocaleString()
+                      : "Not available"}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
+                    Linked Accounts
+                  </label>
+                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg">
+                    {user?.linkedAccounts?.length || 0} account(s)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Debug Section */}
+          {showDebug && (
+            <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-6">
+              <h3 className="text-xl font-semibold text-[#67CE67] mb-4">
+                Complete Privy User Data
+              </h3>
+              <pre className="text-xs text-white bg-[#0A0A0A] p-4 rounded-lg overflow-auto max-h-96">
+                {JSON.stringify(user, null, 2)}
+              </pre>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
