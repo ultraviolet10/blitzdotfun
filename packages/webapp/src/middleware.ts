@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
 
   // Public paths that don't require authentication
   const publicPaths = [
-    "/login",
+    "/",
     "/favicon.ico",
   ];
 

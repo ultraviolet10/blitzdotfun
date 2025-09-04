@@ -1,172 +1,113 @@
 "use client";
 
-import { AuthGuard } from "@/components/AuthGuard";
+import React from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
-import { useState } from "react";
 import blitzLogo from "@/assets/blitzLogo.svg";
 
 export default function Home() {
-  return (
-    <AuthGuard>
-      <Dashboard />
-    </AuthGuard>
-  );
-}
+  const { ready, authenticated, login } = usePrivy();
+  const router = useRouter();
 
-function Dashboard() {
-  const { user, logout } = usePrivy();
-  const [showDebug, setShowDebug] = useState(true);
-
-  // Helper function to get wallet address from different sources
-  const getWalletAddress = () => {
-    // First check direct wallet connection
-    if (user?.wallet?.address) {
-      return user.wallet.address;
-    }
-
-    // Check for cross_app linked accounts (Zora login)
-    const crossAppAccount = user?.linkedAccounts?.find(
-      (account) => account.type === "cross_app"
-    );
-    if (crossAppAccount?.smartWallets?.[0]?.address) {
-      return crossAppAccount.smartWallets[0].address;
-    }
-
-    return null;
+  const handleLogin = () => {
+    login();
   };
 
-  // Helper function to get wallet type
-  const getWalletType = () => {
-    if (user?.wallet?.walletClientType) {
-      return user.wallet.walletClientType;
+  React.useEffect(() => {
+    if (authenticated) {
+      router.replace("/dashboard");
     }
-
-    const crossAppAccount = user?.linkedAccounts?.find(
-      (account) => account.type === "cross_app"
-    );
-    if (crossAppAccount) {
-      return "Cross-app (Smart Wallet)";
-    }
-
-    return "Unknown";
-  };
-
-  const walletAddress = getWalletAddress();
-  const walletType = getWalletType();
+  }, [authenticated, router]);
 
   return (
-    <div className="min-h-screen bg-[#121212]">
-      <div className="container mx-auto px-4 py-8">
-        <header className="flex justify-between items-center mb-12">
+    <div className="min-h-screen bg-[#121212] flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        {/* Left Side - Hero Content */}
+        <div className="space-y-8">
           <div className="flex items-center gap-4">
             <Image src={blitzLogo} alt="Blitz Logo" width={50} height={50} />
-            <h1 className="text-3xl font-bold text-[#67CE67]">Blitz</h1>
+            <h1 className="text-5xl lg:text-6xl font-bold text-[#67CE67] leading-tight">
+              Blitz
+            </h1>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-white">
-              Welcome,{" "}
-              {walletAddress
-                ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-                : "Guest"}
-            </div>
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="px-4 py-2 text-sm font-medium text-black bg-[#67CE67] hover:bg-[#58B958] rounded-lg transition-colors"
-            >
-              {showDebug ? "Hide" : "Show"} Debug
-            </button>
-            <button
-              onClick={logout}
-              className="px-4 py-2 text-sm font-medium text-white bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg hover:bg-[#2A2A2A] transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </header>
 
-        <main className="max-w-4xl mx-auto space-y-8">
-          {/* User Profile Section */}
-          <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-8">
-            <h2 className="text-2xl font-semibold text-[#67CE67] mb-6">
-              User Profile
+          <div>
+            <h2 className="text-4xl lg:text-5xl font-bold text-[#67CE67] leading-tight">
+              Creators battle.
             </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
-                    Wallet Address
-                  </label>
-                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg font-mono text-sm break-all">
-                    {walletAddress || "Not connected"}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
-                    Wallet Type
-                  </label>
-                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg">
-                    {walletType}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
-                    Wallet Connected
-                  </label>
-                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg">
-                    {walletAddress ? "Yes" : "No"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
-                    User ID
-                  </label>
-                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg font-mono text-sm break-all">
-                    {user?.id || "Not available"}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
-                    Created At
-                  </label>
-                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg">
-                    {user?.createdAt
-                      ? new Date(user.createdAt).toLocaleString()
-                      : "Not available"}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#67CE67] block mb-1">
-                    Linked Accounts
-                  </label>
-                  <p className="text-white bg-[#0A0A0A] p-3 rounded-lg">
-                    {user?.linkedAccounts?.length || 0} account(s)
-                  </p>
-                </div>
-              </div>
+            <h3 className="text-4xl lg:text-5xl font-bold text-[#67CE67] leading-tight">
+              Support by trading.
+            </h3>
+            <div className="space-y-2">
+              <p className="text-2xl lg:text-3xl font-medium text-[#67CE67] leading-tight">
+                Win together.
+              </p>
+              <p className="text-2xl lg:text-3xl font-medium text-[#67CE67] leading-tight">
+                Win big.
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Debug Section */}
-          {showDebug && (
-            <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-6">
-              <h3 className="text-xl font-semibold text-[#67CE67] mb-4">
-                Complete Privy User Data
-              </h3>
-              <pre className="text-xs text-white bg-[#0A0A0A] p-4 rounded-lg overflow-auto max-h-96">
-                {JSON.stringify(user, null, 2)}
-              </pre>
-            </div>
-          )}
-        </main>
+        {/* Right Side - Login Card */}
+        <div className="flex justify-center">
+          <Card className="w-full max-w-md bg-[#1A1A1A] border-[#2A2A2A]">
+            <CardHeader className="text-center space-y-4">
+              <div className="flex items-center justify-center">
+                <Image
+                  src={blitzLogo}
+                  alt="Blitz Logo"
+                  width={60}
+                  height={60}
+                />
+              </div>
+              <div className="space-y-2">
+                <CardTitle className="text-2xl text-[#67CE67]">
+                  Welcome to Blitz
+                </CardTitle>
+                <CardDescription className="text-[#67CE67] opacity-80">
+                  Connect your wallet to start trading and supporting creators
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Button
+                onClick={handleLogin}
+                disabled={!ready || authenticated}
+                className="w-full h-12 text-lg font-semibold bg-[#67CE67] hover:bg-[#58B958] text-black"
+                size="lg"
+              >
+                {!ready ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  "Connect your account"
+                )}
+              </Button>
+
+              <Separator className="bg-[#2A2A2A]" />
+
+              <div className="text-center">
+                <p className="text-xs text-[#67CE67] opacity-80">
+                  By connecting, you agree to our Terms of Service and Privacy
+                  Policy
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
