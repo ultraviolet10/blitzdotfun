@@ -49,6 +49,7 @@ export function AuthScreen() {
         <div className="pb-12">
           <button
             onClick={handleLogin}
+            type="button"
             disabled={!ready || authenticated}
             className="w-full px-6 py-4 text-black text-lg font-bold rounded-full shadow-lg disabled:opacity-50"
             style={{

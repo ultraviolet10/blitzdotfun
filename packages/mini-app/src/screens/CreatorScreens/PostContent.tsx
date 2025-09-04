@@ -49,7 +49,7 @@ export function PostContentScreen({
         <div className="flex-1 flex flex-col items-center justify-center">
           <div className="flex flex-col items-center text-center max-w-[400px]">
             <h2
-              className="font-dela-gothic-one text-4xl font-bold mb-16"
+              className="font-dela-gothic-one text-4xl font-bold mb-8"
               style={{
                 color: "#F1F1F1",
                 WebkitTextStroke: "1px #1C7807",
@@ -77,6 +77,7 @@ export function PostContentScreen({
                 background:
                   "linear-gradient(to right, #A6EC9C 0%, #B8EF92 100%)",
               }}
+              onClick={onNavigateToPreContest}
             >
               <div className="flex justify-center items-center gap-2">
                 <span>Post Now</span>
@@ -93,18 +94,6 @@ export function PostContentScreen({
             </p>
           </div>
         </div>
-
-        {/* //TODO: Shall be removed in production - @kshitij-hash */}
-        {onNavigateToPreContest && (
-          <div className="flex justify-center mt-2">
-            <button
-              onClick={onNavigateToPreContest}
-              className="bg-lime-400 hover:bg-lime-300 text-black font-semibold py-3 px-6 rounded-full transition-colors"
-            >
-              Navigate to Pre Contest
-            </button>
-          </div>
-        )}
       </div>
 
       <InfoDrawer

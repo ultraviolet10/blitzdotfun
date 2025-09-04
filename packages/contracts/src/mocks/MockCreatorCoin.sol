@@ -6,18 +6,26 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 
 contract MockCreatorCoin is ICreatorCoin {
     address public payoutRecipient;
-    uint256 private _totalSupply = 1000000e18;
+    uint256 private _totalSupply;
     uint256 public vestingStartTime;
     uint256 public vestingEndTime;
     uint256 public totalClaimed;
+    uint256 public claimableAmount;
+    
+    string private _name;
+    string private _symbol;
 
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    constructor(address _payoutRecipient) {
+    constructor(string memory name_, string memory symbol_, address _payoutRecipient) {
+        _name = name_;
+        _symbol = symbol_;
         payoutRecipient = _payoutRecipient;
         vestingStartTime = block.timestamp;
         vestingEndTime = block.timestamp + 365 days;
+        _totalSupply = 10000 ether;
+        claimableAmount = 1000 ether;
         _balances[_payoutRecipient] = _totalSupply;
     }
 
@@ -34,12 +42,15 @@ contract MockCreatorCoin is ICreatorCoin {
     }
 
     function transfer(address to, uint256 value) external returns (bool) {
+        require(_balances[msg.sender] >= value, "Insufficient balance");
         _balances[msg.sender] -= value;
         _balances[to] += value;
         return true;
     }
 
     function transferFrom(address from, address to, uint256 value) external returns (bool) {
+        require(_allowances[from][msg.sender] >= value, "Insufficient allowance");
+        require(_balances[from] >= value, "Insufficient balance");
         _allowances[from][msg.sender] -= value;
         _balances[from] -= value;
         _balances[to] += value;
@@ -51,8 +62,8 @@ contract MockCreatorCoin is ICreatorCoin {
         return true;
     }
 
-    function getClaimableAmount() external pure returns (uint256) {
-        return 0;
+    function getClaimableAmount() external view returns (uint256) {
+        return claimableAmount;
     }
 
     function claimVesting() external pure returns (uint256) {
@@ -63,12 +74,22 @@ contract MockCreatorCoin is ICreatorCoin {
         return IPoolManager(address(0));
     }
 
-    function name() external pure returns (string memory) {
-        return "MockCreatorCoin";
+    function name() external view returns (string memory) {
+        return _name;
     }
 
-    function symbol() external pure returns (string memory) {
-        return "MCC";
+    function symbol() external view returns (string memory) {
+        return _symbol;
+    }
+
+    // Test helper functions
+    function setClaimableAmount(uint256 amount) external {
+        claimableAmount = amount;
+    }
+
+    function mint(address to, uint256 amount) external {
+        _totalSupply += amount;
+        _balances[to] += amount;
     }
 
     function decimals() external pure returns (uint8) {

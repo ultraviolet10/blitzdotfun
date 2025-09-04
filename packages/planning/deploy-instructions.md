@@ -138,7 +138,7 @@ make deploy
 
 ### Directory Structure
 
-```
+```txt
 deployments/
 ├── local/          # Local Anvil deployments
 ├── testnet/        # Sepolia deployments  

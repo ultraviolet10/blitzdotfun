@@ -8,6 +8,8 @@ import infoIcon from "../../../public/info.svg";
 import { InfoDrawer } from "~/components/shared/InfoDrawer";
 import arrowRightUp2 from "../../../public/arrow_up_right_2.svg";
 import copyIcon from "../../../public/copy.svg";
+import { useContests } from "~/hooks/useContests";
+import { useMiniApp } from "@neynar/react";
 
 export function WelcomeScreen({
   onNavigateToSuccess,
@@ -15,6 +17,32 @@ export function WelcomeScreen({
   onNavigateToSuccess: () => void;
 }) {
   const [isInfoDrawerOpen, setIsInfoDrawerOpen] = useState(false);
+  const [copyTooltip, setCopyTooltip] = useState("Copy");
+  const [showCheckmark, setShowCheckmark] = useState(false);
+  const { userContest } = useContests();
+  const { actions } = useMiniApp();
+
+  const handleCopyContract = async () => {
+    if (userContest?.contractAddress) {
+      try {
+        await navigator.clipboard.writeText(userContest.contractAddress);
+        setCopyTooltip("Copied!");
+        setShowCheckmark(true);
+        setTimeout(() => {
+          setCopyTooltip("Copy");
+          setShowCheckmark(false);
+        }, 2000);
+      } catch (err) {
+        console.error("Failed to copy:", err);
+      }
+    }
+  };
+
+  const handleDepositClick = () => {
+    actions.openUrl({
+      url: "https://zora.co/" + userContest,
+    });
+  };
 
   return (
     <div className="h-screen bg-white relative overflow-hidden">
@@ -49,10 +77,10 @@ export function WelcomeScreen({
           </button>
         </div>
 
-        <div className="mt-28">
-          <div className="max-w-[250px] flex flex-col gap-4">
+        <div className="mt-20 flex-1 flex flex-col">
+          <div className="w-full text-center mb-8">
             <h2
-              className="font-dela-gothic-one text-3xl font-bold"
+              className="font-dela-gothic-one text-4xl font-bold mb-4"
               style={{
                 color: "#F1F1F1",
                 WebkitTextStroke: "1px #1C7807",
@@ -61,9 +89,12 @@ export function WelcomeScreen({
             >
               WELCOME TO BLITZ!
             </h2>
-            <p className="font-schibsted-grotesk font-medium text-lg" style={{
-              color: "#124D04"
-            }}>
+            <p
+              className="font-schibsted-grotesk font-medium text-xl"
+              style={{
+                color: "#124D04",
+              }}
+            >
               Your contest with Aritra begins soon!
             </p>
           </div>
@@ -94,24 +125,41 @@ export function WelcomeScreen({
                     <h3 className="font-schibsted-grotesk text-black opacity-50">
                       Step 2
                     </h3>
-                    <p className="font-schibsted-grotesk text-black font-medium">
-                      <span>Send it to</span>{" "}
-                      <span className="cursor-pointer inline-flex items-center">
+                    <p className="font-schibsted-grotesk text-black font-medium text-base leading-relaxed">
+                      Send it to{" "}
+                      <span
+                        className="cursor-pointer inline-flex items-center relative group"
+                        onClick={handleCopyContract}
+                        title={copyTooltip}
+                      >
                         <span
-                          className="font-schibsted-grotesk font-bold underline"
+                          className="font-schibsted-grotesk font-bold underline hover:opacity-80 transition-opacity"
                           style={{
                             color: "#1C7807",
                           }}
                         >
-                          Blitz.sol
+                          {userContest?.contractAddress
+                            ? `${userContest.contractAddress.slice(
+                                0,
+                                6
+                              )}...${userContest.contractAddress.slice(-4)}`
+                            : "Blitz.sol"}
                         </span>
-                        <img
-                          src={copyIcon.src}
-                          alt="copy"
-                          className="ml-1 w-5 h-5"
-                        />
+                        {showCheckmark ? (
+                          <span className="ml-1 text-green-600 text-sm">✓</span>
+                        ) : (
+                          <img
+                            src={copyIcon.src}
+                            alt="copy"
+                            className="ml-1 w-4 h-4 hover:opacity-70 transition-opacity"
+                          />
+                        )}
+                        {/* Tooltip */}
+                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                          {copyTooltip}
+                        </div>
                       </span>{" "}
-                      <span>to enter</span>
+                      to enter
                     </p>
                   </div>
                 </div>
@@ -119,11 +167,12 @@ export function WelcomeScreen({
             </div>
           </div>
           <button
-            className="font-schibsted-grotesk w-full px-6 py-4 text-lg font-medium rounded-full shadow-lg"
+            className="font-schibsted-grotesk w-full px-6 py-4 text-lg font-semibold rounded-full shadow-lg transition-all duration-200 hover:shadow-xl active:scale-[0.98]"
             style={{
               color: "#124D04",
               background: "linear-gradient(to right, #A6EC9C 0%, #B8EF92 100%)",
             }}
+            onClick={handleDepositClick}
           >
             <div className="flex justify-center items-center gap-2">
               <span>Deposit $Aritra</span>
@@ -131,19 +180,6 @@ export function WelcomeScreen({
             </div>
           </button>
         </div>
-
-        {/* //TODO: Shall be removed in production - @kshitij-hash */}
-        {onNavigateToSuccess && (
-          <div className="flex justify-center mt-2">
-            <button
-              onClick={onNavigateToSuccess}
-              className="bg-lime-400 hover:bg-lime-300 text-black font-semibold py-3 px-6 rounded-full transition-colors"
-            >
-              Navigate to Success
-            </button>
-          </div>
-        )}
-
         <InfoDrawer
           isOpen={isInfoDrawerOpen}
           onClose={() => setIsInfoDrawerOpen(false)}

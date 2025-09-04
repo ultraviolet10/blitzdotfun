@@ -79,22 +79,11 @@ export function SuccessScreen({
               color: "#124D04",
               background: "linear-gradient(to right, #A6EC9C 0%, #B8EF92 100%)",
             }}
+            onClick={onNavigateToPostContent}
           >
             Continue
           </button>
         </div>
-
-        {/* //TODO: Shall be removed in production - @kshitij-hash */}
-        {onNavigateToPostContent && (
-          <div className="flex justify-center mt-2">
-            <button
-              onClick={onNavigateToPostContent}
-              className="bg-lime-400 hover:bg-lime-300 text-black font-semibold py-3 px-6 rounded-full transition-colors"
-            >
-              Navigate to Post Content
-            </button>
-          </div>
-        )}
         <InfoDrawer
           isOpen={isInfoDrawerOpen}
           onClose={() => setIsInfoDrawerOpen(false)}
