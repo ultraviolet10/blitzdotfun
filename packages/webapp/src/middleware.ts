@@ -1,35 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
-  // Get the pathname of the request (e.g. /, /protected)
-  const path = request.nextUrl.pathname;
+  const { pathname } = request.nextUrl;
 
-  // Define paths that should be publicly accessible
-  const isPublicPath =
-    path === "/login" ||
-    path.startsWith("/_next") ||
-    path.startsWith("/api") ||
-    path === "/favicon.ico";
+  // Public paths that don't require authentication
+  const publicPaths = [
+    "/login",
+    "/favicon.ico",
+  ];
 
-  // For now, we'll handle auth check on the client side
-  // This middleware just ensures the login route is accessible
-  if (isPublicPath) {
+  // Check if the current path is public
+  const isPublicPath = publicPaths.some(path => pathname === path);
+
+  // Allow public paths and Next.js internal paths
+  if (isPublicPath || 
+      pathname.startsWith("/_next") || 
+      pathname.startsWith("/api")) {
     return NextResponse.next();
   }
 
-  // For all other paths, let them through - auth will be handled client-side
+  // For all other paths, continue (auth handled client-side)
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
+     * Match all request paths except:
      * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * - favicon.ico, sitemap.xml, robots.txt (SEO files)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
   ],
 };

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,6 +17,7 @@ import blitzLogo from "@/assets/blitzLogo.svg";
 
 export default function LoginPage() {
   const { ready, authenticated, login } = usePrivy();
+  const router = useRouter();
 
   const handleLogin = () => {
     login();
@@ -23,9 +25,9 @@ export default function LoginPage() {
 
   React.useEffect(() => {
     if (authenticated) {
-      window.location.href = "/";
+      router.replace("/");
     }
-  }, [authenticated]);
+  }, [authenticated, router]);
 
   return (
     <div className="min-h-screen bg-[#121212] flex items-center justify-center p-4">

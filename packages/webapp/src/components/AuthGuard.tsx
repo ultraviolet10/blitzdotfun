@@ -14,13 +14,14 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   useEffect(() => {
     if (ready && !authenticated) {
-      router.push("/login");
+      router.replace("/login");
     }
   }, [ready, authenticated, router]);
 
+  // Show loading state while Privy is initializing
   if (!ready) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#121212] text-[#67CE67]">
+      <div className="min-h-screen flex items-center justify-center bg-[#121212]">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 border-2 border-[#2A2A2A] border-t-[#67CE67] rounded-full animate-spin"></div>
           <span className="text-[#67CE67]">Loading...</span>
@@ -29,8 +30,16 @@ export function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
+  // Show loading state while redirecting to login
   if (!authenticated) {
-    return null; // Will redirect to login
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#121212]">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 border-2 border-[#2A2A2A] border-t-[#67CE67] rounded-full animate-spin"></div>
+          <span className="text-[#67CE67]">Redirecting to login...</span>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
