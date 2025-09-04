@@ -1,5 +1,7 @@
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
-@uniswap/v4-core/=lib/v4-core/
-@uniswap/v4-periphery/=lib/v4-periphery/
+@openzeppelin/contracts-upgradeable/=lib/zora-protocol/packages/coins/node_modules/@openzeppelin/contracts-upgradeable/
+@uniswap/v4-core/=lib/zora-protocol/packages/coins/node_modules/@uniswap/v4-core/
+@uniswap/v4-periphery/=lib/zora-protocol/packages/coins/node_modules/@uniswap/v4-periphery/
 @zora/=lib/zora-protocol/packages/coins/src/
+@zoralabs/shared-contracts/=lib/zora-protocol/packages/coins/node_modules/@zoralabs/shared-contracts/src/
 @prb/math/=lib/prb-math/

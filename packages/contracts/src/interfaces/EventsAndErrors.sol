@@ -22,7 +22,17 @@ error VestingScheduleAlreadyExists();
 // ══════════════════════════════════════════════════════════════════════════════
 // CUSTOM EVENTS
 // ══════════════════════════════════════════════════════════════════════════════
-event BattleCreated(uint256 indexed battleId, address playerOne, address playerTwo);
+event BattleCreated(
+    bytes32 indexed battleId,
+    address indexed playerOne,
+    address indexed playerTwo,
+    address playerOneCoin,
+    uint96 playerOneStake,
+    address playerTwoCoin,
+    uint96 playerTwoStake,
+    uint96 startTime,
+    uint96 endTime
+);
 
 event BattleCompleted(bytes32 indexed battleId, address winner);
 

@@ -118,19 +118,17 @@ library BlitzDistribution {
         require(winnerCoin != address(0) && loserCoin != address(0), "Invalid coin addresses");
         require(totalPool > 0, "Invalid total pool");
 
-        // 50% immediate liquid to winner (split between both coins)
+        // 50% immediate liquid to winner (from actual prize pool)
         uint256 liquidAmount = (totalPool * winnerLiquidBps) / 10000;
-        uint256 winnerLiquidShare = liquidAmount / 2;
-        vaultStorage.depositedTokens[winner][winnerCoin] += winnerLiquidShare;
-        vaultStorage.depositedTokens[winner][loserCoin] += winnerLiquidShare;
+        IERC20(loserCoin).safeTransfer(winner, liquidAmount);
 
         // 15% to content coin holders (collector distribution)
         uint256 collectorAmount = (totalPool * winnerCollectorBps) / 10000;
         if (topCollectors.length > 0 && collectorAmount > 0) {
-            _distributeToCollectors(vaultStorage, topCollectors, collectorBalances, collectorAmount, winnerCoin);
+            _distributeToCollectors(topCollectors, collectorBalances, collectorAmount, loserCoin);
         }
 
-        // 5% time-locked vesting (30 days)
+        // 5% time-locked vesting (30 days) // [uv1000] remove
         uint256 vestingAmount = (totalPool * winnerVestingBps) / 10000;
         if (vestingAmount > 0) {
             BlitzVault.createVestingSchedule(vaultStorage, winner, winnerCoin, vestingAmount, vestingDuration);
@@ -185,6 +183,7 @@ library BlitzDistribution {
             vaultStorage.depositedTokens[winner][loserCoin] += fallbackShare;
         }
 
+        // [uv1000] no actual erc20 transfer either
         // 5% backing boost (simplified for now - TODO: implement content coin detection)
         uint256 boostAmount = (totalPool * flywheelBoostBps) / 10000;
         // For now, give boost directly to winner - will enhance with coin type detection later
@@ -230,6 +229,7 @@ library BlitzDistribution {
         // 10% loser consolation (with 7-day cooldown)
         uint256 consolationAmount = (totalPool * loserConsolationBps) / 10000;
         if (consolationAmount > 0) {
+            // [uv1000] remove
             BlitzVault.createTimelockWithdrawal(vaultStorage, loser, loserCoin, consolationAmount, loserCooldown);
         }
 
@@ -255,15 +255,12 @@ library BlitzDistribution {
     /**
      * @notice Distribute tokens to collectors using gas-optimized batch processing
      * @dev Automatically chooses between optimized single-batch or multi-batch processing
-     *
-     * @param vaultStorage Storage reference for vault state
      * @param collectors Array of collector addresses
      * @param balances Array of collector token balances
      * @param totalAmount Total amount to distribute
      * @param tokenAddress The token contract to distribute
      */
     function _distributeToCollectors(
-        BlitzVault.VaultStorage storage vaultStorage,
         address[] calldata collectors,
         uint256[] calldata balances,
         uint256 totalAmount,
@@ -274,9 +271,9 @@ library BlitzDistribution {
 
         // Use optimized batch processing for large collector arrays
         if (collectors.length > MAX_COLLECTORS_PER_BATCH) {
-            _distributeToCollectorsBatch(vaultStorage, collectors, balances, totalAmount, tokenAddress);
+            _distributeToCollectorsBatch(collectors, balances, totalAmount, tokenAddress);
         } else {
-            _distributeToCollectorsOptimized(vaultStorage, collectors, balances, totalAmount, tokenAddress);
+            _distributeToCollectorsOptimized(collectors, balances, totalAmount, tokenAddress);
         }
     }
 
@@ -285,7 +282,6 @@ library BlitzDistribution {
      * @dev Single-pass algorithm with enhanced precision and proportional remainder distribution
      */
     function _distributeToCollectorsOptimized(
-        BlitzVault.VaultStorage storage vaultStorage,
         address[] calldata collectors,
         uint256[] calldata balances,
         uint256 totalAmount,
@@ -339,10 +335,10 @@ library BlitzDistribution {
             remainder = _distributeRemainderProportionally(rewards, rewardIndex, remainder, totalBalance);
         }
 
-        // Batch update storage (single storage write per collector)
+        // Direct transfer to collectors (immediate distribution)
         for (uint256 i = 0; i < rewardIndex; i++) {
             if (rewards[i].rewardAmount > 0) {
-                vaultStorage.depositedTokens[rewards[i].collector][tokenAddress] += rewards[i].rewardAmount;
+                IERC20(tokenAddress).safeTransfer(rewards[i].collector, rewards[i].rewardAmount);
             }
         }
 
@@ -356,7 +352,6 @@ library BlitzDistribution {
      * @dev Processes collectors in chunks to manage gas costs effectively
      */
     function _distributeToCollectorsBatch(
-        BlitzVault.VaultStorage storage vaultStorage,
         address[] calldata collectors,
         uint256[] calldata balances,
         uint256 totalAmount,
@@ -384,9 +379,8 @@ library BlitzDistribution {
                 endIndex = length;
             }
 
-            uint256 batchDistributed = _processBatch(
-                vaultStorage, collectors, balances, startIndex, endIndex, totalAmount, totalBalance, tokenAddress
-            );
+            uint256 batchDistributed =
+                _processBatch(collectors, balances, startIndex, endIndex, totalAmount, totalBalance, tokenAddress);
 
             totalDistributed += batchDistributed;
 
@@ -406,7 +400,7 @@ library BlitzDistribution {
             // Give final remainder to first collector with non-zero balance
             for (uint256 i = 0; i < length; i++) {
                 if (balances[i] > 0) {
-                    vaultStorage.depositedTokens[collectors[i]][tokenAddress] += finalRemainder;
+                    IERC20(tokenAddress).safeTransfer(collectors[i], finalRemainder);
                     break;
                 }
             }
@@ -422,7 +416,6 @@ library BlitzDistribution {
      * @dev Internal function for batch processing individual collector chunks
      */
     function _processBatch(
-        BlitzVault.VaultStorage storage vaultStorage,
         address[] calldata collectors,
         uint256[] calldata balances,
         uint256 startIndex,
@@ -435,7 +428,7 @@ library BlitzDistribution {
             if (balances[i] > 0) {
                 uint256 collectorShare = (totalAmount * balances[i]) / totalBalance;
                 if (collectorShare >= MIN_COLLECTOR_REWARD) {
-                    vaultStorage.depositedTokens[collectors[i]][tokenAddress] += collectorShare;
+                    IERC20(tokenAddress).safeTransfer(collectors[i], collectorShare);
                     batchDistributed += collectorShare;
                 }
             }
@@ -515,6 +508,7 @@ library BlitzDistribution {
         uint256[] memory rewards = new uint256[](topTraders.length);
         uint256 distributedTotal = 0;
 
+        // [uv1000] no erc20 transfer either
         for (uint256 i = 0; i < topTraders.length; i++) {
             traderAddresses[i] = topTraders[i].trader;
             volumes[i] = topTraders[i].volume;
