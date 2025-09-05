@@ -3,11 +3,10 @@
 import { usePrivy } from "@privy-io/react-auth"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import React from "react"
+import { useEffect } from "react"
 import blitzLogo from "@/assets/blitzLogo.svg"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 
 export default function Home() {
     const { ready, authenticated, login } = usePrivy()
@@ -17,7 +16,7 @@ export default function Home() {
         login()
     }
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (authenticated) {
             router.replace("/welcome")
         }
@@ -79,14 +78,6 @@ export default function Home() {
                                     "Connect your account"
                                 )}
                             </Button>
-
-                            <Separator className="bg-[#2A2A2A]" />
-
-                            <div className="text-center">
-                                <p className="text-xs text-[#67CE67] opacity-80">
-                                    By connecting, you agree to our Terms of Service and Privacy Policy
-                                </p>
-                            </div>
                         </CardContent>
                     </Card>
                 </div>

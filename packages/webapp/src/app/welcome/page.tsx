@@ -1,11 +1,10 @@
 "use client"
 
 import { usePrivy } from "@privy-io/react-auth"
-import { useAtomValue } from "jotai"
 import Image from "next/image"
 import blitzLogo from "@/assets/blitzLogo.svg"
-import { compoundUserAtom } from "@/atoms/userAtoms"
 import { AuthGuard } from "@/components/AuthGuard"
+import WelcomeCard from "./WelcomeCard"
 
 export default function WelcomePage() {
     return (
@@ -17,13 +16,11 @@ export default function WelcomePage() {
 
 function Welcome() {
     const { logout } = usePrivy()
-    const BlitzUser = useAtomValue(compoundUserAtom)
-
-    const { auth, profile, loading, errors } = BlitzUser
 
     return (
-        <div className="min-h-screen bg-[#121212]">
+        <div className="min-h-screen bg-[#121212] size-full">
             <div className="container mx-auto px-4 py-8">
+                {/* @todo move this to its own header file */}
                 <header className="flex justify-between items-center mb-12">
                     <div className="flex items-center gap-4">
                         <Image src={blitzLogo} alt="Blitz Logo" width={50} height={50} />
@@ -38,7 +35,9 @@ function Welcome() {
                             Logout
                         </button>
                     </div>
-                </header>                
+                </header>
+
+                <WelcomeCard />
             </div>
         </div>
     )

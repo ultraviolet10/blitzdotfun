@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/contracts",
     "packages/mini-app",
-    "packages/blitz-oracle"
+    "packages/blitz-oracle",
+    "packages/webapp"
   ],
   "devDependencies": {
     "@types/bun": "latest",
