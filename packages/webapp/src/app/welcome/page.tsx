@@ -16,7 +16,7 @@ export default function DashboardPage() {
 
 function Dashboard() {
     const { user, logout } = usePrivy()
-    const [showDebug, setShowDebug] = useState(true)
+    const [_showDebug, _setShowDebug] = useState(true)
 
     // Helper function to get wallet address from different sources
     const getWalletAddress = () => {
@@ -60,17 +60,6 @@ function Dashboard() {
                         <h1 className="text-3xl font-bold text-[#67CE67]">Blitz</h1>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="text-sm text-white">
-                            Welcome,{" "}
-                            {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "Guest"}
-                        </div>
-                        <button
-                            onClick={() => setShowDebug(!showDebug)}
-                            className="px-4 py-2 text-sm font-medium text-black bg-[#67CE67] hover:bg-[#58B958] rounded-lg transition-colors"
-                            type="button"
-                        >
-                            {showDebug ? "Hide" : "Show"} Debug
-                        </button>
                         <button
                             onClick={logout}
                             className="px-4 py-2 text-sm font-medium text-white bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg hover:bg-[#2A2A2A] transition-colors"
@@ -138,16 +127,6 @@ function Dashboard() {
                             </div>
                         </div>
                     </div>
-
-                    {/* Debug Section */}
-                    {showDebug && (
-                        <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-6">
-                            <h3 className="text-xl font-semibold text-[#67CE67] mb-4">Complete Privy User Data</h3>
-                            <pre className="text-xs text-white bg-[#0A0A0A] p-4 rounded-lg overflow-auto max-h-96">
-                                {JSON.stringify(user, null, 2)}
-                            </pre>
-                        </div>
-                    )}
                 </main>
             </div>
         </div>
