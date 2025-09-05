@@ -2,6 +2,7 @@
 
 import { usePrivy } from "@privy-io/react-auth"
 import Image from "next/image"
+import { useCallback } from "react"
 import blitzLogo from "@/assets/blitzLogo.svg"
 import { AuthGuard } from "@/components/AuthGuard"
 import WelcomeCard from "./WelcomeCard"
@@ -16,6 +17,8 @@ export default function WelcomePage() {
 
 function Welcome() {
     const { logout } = usePrivy()
+
+    const _checkIfUserSubmittedTokens = useCallback(() => {}, [])
 
     return (
         <div className="min-h-screen bg-[#121212] size-full">
@@ -36,8 +39,12 @@ function Welcome() {
                         </button>
                     </div>
                 </header>
-
+                {/* @todo */}
                 <WelcomeCard />
+
+                <button className="h-16 w-full text-white bg-[#1A1A1A]" type="button">
+                    Verify
+                </button>
             </div>
         </div>
     )

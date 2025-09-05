@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "next dev --turbopack",
+        "dev": "next dev",
         "build": "next build",
         "start": "next start",
         "lint": "eslint"
@@ -12,8 +12,10 @@
         "@blitzdotfun/blitz-contracts": "workspace:*",
         "@phosphor-icons/react": "^2.1.10",
         "@privy-io/react-auth": "^2.24.0",
+        "@privy-io/wagmi": "^1.0.6",
         "@radix-ui/react-separator": "^1.1.7",
         "@radix-ui/react-slot": "^1.2.3",
+        "@tanstack/react-query": "^5.87.1",
         "@zoralabs/coins-sdk": "^0.3.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",

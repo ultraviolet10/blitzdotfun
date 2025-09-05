@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { type ReactNode, useEffect } from "react"
 import { authDataAtom } from "@/atoms/userAtoms"
 import { useZora } from "@/hooks/useZora"
-import { getWalletAddress, getWalletType, isZoraLogin } from "@/lib/userUtils"
+import { getWalletAddress, getWalletType, isZoraLogin } from "@/lib/user-utils"
 
 interface AuthGuardProps {
     children: ReactNode
