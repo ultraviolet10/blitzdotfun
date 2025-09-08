@@ -45,7 +45,7 @@ const WelcomeCard = () => {
                 Withdraw Creator Coins
               </h3>
               <p className="text-gray-300 leading-relaxed">
-                Withdraw $500 worth of{" "}
+                Withdraw 10% of{" "}
                 <a
                   href={`https://zora.co/${profile.data?.username}`}
                   target="_blank"
@@ -94,6 +94,12 @@ const WelcomeCard = () => {
           </div>
 
           {/* Step 3 */}
+          {/*
+            - they need to copy their content coin address in here, and send a request to 
+              /check-creator-token here.
+            - we (probably) need to fetch how much they own and compute 10% of the same in order to 
+              cross check. 
+           */}
           <div className="flex gap-4">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-[#2A2A2A] rounded-full flex items-center justify-center border border-[#3A3A3A]">
