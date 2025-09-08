@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import blitzLogo from "@/assets/blitzLogo.svg"
 
 interface Contest {
@@ -46,16 +46,6 @@ export default function AdminPage() {
         contractAddress: "",
     })
 
-    // Check authentication on mount
-    useEffect(() => {
-        const savedPassword = localStorage.getItem("admin-password")
-        if (savedPassword) {
-            setPassword(savedPassword)
-            setIsAuthenticated(true)
-            loadData(savedPassword)
-        }
-    }, [loadData])
-
     const authenticate = async () => {
         try {
             setLoading(true)
@@ -83,7 +73,7 @@ export default function AdminPage() {
         }
     }
 
-    const loadData = async (adminPassword: string) => {
+    const loadData = useCallback(async (adminPassword: string) => {
         try {
             setLoading(true)
 
@@ -112,7 +102,7 @@ export default function AdminPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
     const createContest = async () => {
         try {
@@ -200,6 +190,16 @@ export default function AdminPage() {
         setActiveContest(null)
     }
 
+    // Check authentication on mount
+    useEffect(() => {
+        const savedPassword = localStorage.getItem("admin-password")
+        if (savedPassword) {
+            setPassword(savedPassword)
+            setIsAuthenticated(true)
+            loadData(savedPassword)
+        }
+    }, [loadData])
+
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-[#121212] flex items-center justify-center">
@@ -220,6 +220,7 @@ export default function AdminPage() {
                         />
 
                         <button
+                            type="button"
                             onClick={authenticate}
                             disabled={loading || !password}
                             className="w-full p-3 bg-[#67CE67] text-black font-medium rounded-lg hover:bg-[#5AB85A] disabled:opacity-50"
@@ -244,6 +245,7 @@ export default function AdminPage() {
                         <h1 className="text-3xl font-bold text-[#67CE67]">Admin Panel</h1>
                     </div>
                     <button
+                        type="button"
                         onClick={logout}
                         className="px-4 py-2 bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg text-white hover:bg-[#2A2A2A]"
                     >
@@ -291,6 +293,7 @@ export default function AdminPage() {
 
                             <div className="flex gap-4">
                                 <button
+                                    type="button"
                                     onClick={() => completeContest(activeContest.contestId)}
                                     disabled={loading}
                                     className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
@@ -298,6 +301,7 @@ export default function AdminPage() {
                                     Complete Contest
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => forfeitContest(activeContest.contestId)}
                                     disabled={loading}
                                     className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
@@ -318,7 +322,7 @@ export default function AdminPage() {
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-gray-400 mb-2">Contest Name</label>
+                                <h3 className="block text-gray-400 mb-2">Contest Name</h3>
                                 <input
                                     type="text"
                                     value={createForm.name}
@@ -328,7 +332,7 @@ export default function AdminPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-gray-400 mb-2">Contract Address</label>
+                                <h3 className="block text-gray-400 mb-2">Contract Address</h3>
                                 <input
                                     type="text"
                                     value={createForm.contractAddress}
@@ -449,6 +453,7 @@ export default function AdminPage() {
                         </div>
 
                         <button
+                            type="button"
                             onClick={createContest}
                             disabled={
                                 loading ||

@@ -245,10 +245,16 @@ function ContestView() {
                                 made their deposits and submitted their content.
                             </p>
                             <div className="flex justify-center gap-4">
-                                <button className="px-6 py-3 bg-[#67CE67] text-black font-medium rounded-lg hover:bg-[#5AB85A] transition-colors">
+                                <button
+                                    type="button"
+                                    className="px-6 py-3 bg-[#67CE67] text-black font-medium rounded-lg hover:bg-[#5AB85A] transition-colors"
+                                >
                                     Get Notified
                                 </button>
-                                <button className="px-6 py-3 bg-[#1A1A1A] border border-[#2A2A2A] text-white font-medium rounded-lg hover:bg-[#2A2A2A] transition-colors">
+                                <button
+                                    type="button"
+                                    className="px-6 py-3 bg-[#1A1A1A] border border-[#2A2A2A] text-white font-medium rounded-lg hover:bg-[#2A2A2A] transition-colors"
+                                >
                                     Share Battle
                                 </button>
                             </div>

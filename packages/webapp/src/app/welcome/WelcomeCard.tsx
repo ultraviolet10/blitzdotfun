@@ -27,33 +27,31 @@ const WelcomeCard = () => {
                     <p className="text-gray-400">Follow these steps to enter the contest</p>
                 </div>
 
-        {/* Steps */}
-        <div className="space-y-6">
-          {/* Step 1 */}
-          <div className="flex gap-4">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-[#67CE67] rounded-full flex items-center justify-center">
-                <span className="text-black font-bold text-sm">1</span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-white">
-                Withdraw Creator Coins
-              </h3>
-              <p className="text-gray-300 leading-relaxed">
-                Withdraw 10% of{" "}
-                <a
-                  href={`https://zora.co/${profile.data?.username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#67CE67] hover:text-[#5AB85A] underline font-medium"
-                >
-                  ${profile.data?.username}
-                </a>{" "}
-                coins into your Zora wallet to participate in the battle.
-              </p>
-            </div>
-          </div>
+                {/* Steps */}
+                <div className="space-y-6">
+                    {/* Step 1 */}
+                    <div className="flex gap-4">
+                        <div className="flex-shrink-0">
+                            <div className="w-8 h-8 bg-[#67CE67] rounded-full flex items-center justify-center">
+                                <span className="text-black font-bold text-sm">1</span>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-lg font-semibold text-white">Withdraw Creator Coins</h3>
+                            <p className="text-gray-300 leading-relaxed">
+                                Withdraw 10% of{" "}
+                                <a
+                                    href={`https://zora.co/${profile.data?.username}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#67CE67] hover:text-[#5AB85A] underline font-medium"
+                                >
+                                    ${profile.data?.username}
+                                </a>{" "}
+                                coins into your Zora wallet to participate in the battle.
+                            </p>
+                        </div>
+                    </div>
 
                     {/* Step 2 */}
                     <div className="flex gap-4">
@@ -85,30 +83,28 @@ const WelcomeCard = () => {
                         </div>
                     </div>
 
-          {/* Step 3 */}
-          {/*
+                    {/* Step 3 */}
+                    {/*
             - they need to copy their content coin address in here, and send a request to 
               /check-creator-token here.
             - we (probably) need to fetch how much they own and compute 10% of the same in order to 
               cross check. 
            */}
-          <div className="flex gap-4">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-[#2A2A2A] rounded-full flex items-center justify-center border border-[#3A3A3A]">
-                <span className="text-gray-400 font-bold text-sm">3</span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-white">
-                Create Your Content
-              </h3>
-              <p className="text-gray-300 leading-relaxed">
-                Once your deposit is confirmed, create and submit your battle content. 
-                You&apos;ll have a limited time to showcase your creativity!
-              </p>
-            </div>
-          </div>
-        </div>
+                    <div className="flex gap-4">
+                        <div className="flex-shrink-0">
+                            <div className="w-8 h-8 bg-[#2A2A2A] rounded-full flex items-center justify-center border border-[#3A3A3A]">
+                                <span className="text-gray-400 font-bold text-sm">3</span>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-lg font-semibold text-white">Create Your Content</h3>
+                            <p className="text-gray-300 leading-relaxed">
+                                Once your deposit is confirmed, create and submit your battle content. You&apos;ll have
+                                a limited time to showcase your creativity!
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Status */}
                 <div className="bg-[#2A2A2A] rounded-lg p-4 border border-[#3A3A3A]">

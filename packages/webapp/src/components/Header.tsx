@@ -33,10 +33,10 @@ export function Header() {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                    <button onClick={() => setIsInfoDrawerOpen(true)}>
+                    <button type="button" onClick={() => setIsInfoDrawerOpen(true)}>
                         <Image src={infoIcon} alt="info" width={24} height={24} />
                     </button>
-                    <button onClick={() => setIsShareDrawerOpen(true)}>
+                    <button type="button" onClick={() => setIsShareDrawerOpen(true)}>
                         <Image src={exportIcon} alt="export" width={24} height={24} />
                     </button>
                     {ready && authenticated && user ? <Button onClick={logout}>Logout</Button> : null}

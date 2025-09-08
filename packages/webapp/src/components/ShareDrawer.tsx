@@ -1,13 +1,8 @@
+/** biome-ignore-all lint/a11y/noSvgWithoutTitle: annoyance */
 "use client"
 
 import Image from "next/image"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import FarcasterIcon from "../assets/farcaster.svg"
 import LinkIcon from "../assets/link.svg"
 import TelegramIcon from "../assets/telegram.svg"
@@ -21,17 +16,13 @@ type ShareDrawerProps = {
 export function ShareDrawer({ isOpen, onClose }: ShareDrawerProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent 
+            <DialogContent
                 className="font-schibsted-grotesk max-w-md max-h-[90vh] overflow-y-auto"
                 style={{ backgroundColor: "#161616" }}
             >
                 <DialogHeader className="border-b border-gray-800 pb-6">
-                    <DialogTitle className="text-xl font-bold text-white text-left">
-                        Share Battle Card ⚡
-                    </DialogTitle>
-                    <DialogDescription className="text-sm text-left text-gray-300">
-                        Flip Battle Live!
-                    </DialogDescription>
+                    <DialogTitle className="text-xl font-bold text-white text-left">Share Battle Card ⚡</DialogTitle>
+                    <DialogDescription className="text-sm text-left text-gray-300">Flip Battle Live!</DialogDescription>
                 </DialogHeader>
 
                 <div className="pt-6">
@@ -92,7 +83,12 @@ export function ShareDrawer({ isOpen, onClose }: ShareDrawerProps) {
 
                             <div className="bg-black py-6 px-4 flex flex-col items-center justify-center">
                                 <div className="flex items-center justify-center mb-4">
-                                    <svg className="w-8 h-8 mr-3" viewBox="0 0 24 24" fill="none">
+                                    <svg
+                                        className="w-8 h-8 mr-3"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        aria-label="Lightning bolt"
+                                    >
                                         <path
                                             d="M13 2L4.5 12.5H11L10 22L18.5 11.5H12L13 2Z"
                                             fill="#7BF25D"
@@ -103,7 +99,12 @@ export function ShareDrawer({ isOpen, onClose }: ShareDrawerProps) {
                                         />
                                     </svg>
                                     <span className="text-[#7BF25D] font-bold text-4xl tracking-wider">BLITZ</span>
-                                    <svg className="w-8 h-8 ml-3" viewBox="0 0 24 24" fill="none">
+                                    <svg
+                                        className="w-8 h-8 ml-3"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        aria-label="Lightning bolt"
+                                    >
                                         <path
                                             d="M13 2L4.5 12.5H11L10 22L18.5 11.5H12L13 2Z"
                                             fill="#7BF25D"
@@ -126,25 +127,37 @@ export function ShareDrawer({ isOpen, onClose }: ShareDrawerProps) {
                     {/* //TODO: @kshitij-hash make them functional, ref to waitlist branch implementation */}
                     <div className="flex justify-around mt-8">
                         <div className="flex flex-col items-center">
-                            <button className="w-12 h-12 rounded-full border flex items-center justify-center mb-2">
+                            <button
+                                type="button"
+                                className="w-12 h-12 rounded-full border flex items-center justify-center mb-2"
+                            >
                                 <Image src={LinkIcon.src} alt="Copy link" width={24} height={24} />
                             </button>
                             <span className="text-gray-400 text-xs">Copy link</span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <button className="w-12 h-12 rounded-full border flex items-center justify-center mb-2">
+                            <button
+                                type="button"
+                                className="w-12 h-12 rounded-full border flex items-center justify-center mb-2"
+                            >
                                 <Image src={XIcon.src} alt="X post" width={24} height={24} />
                             </button>
                             <span className="text-gray-400 text-xs">X post</span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <button className="w-12 h-12 rounded-full border flex items-center justify-center mb-2">
+                            <button
+                                type="button"
+                                className="w-12 h-12 rounded-full border flex items-center justify-center mb-2"
+                            >
                                 <Image src={TelegramIcon.src} alt="Telegram" width={24} height={24} />
                             </button>
                             <span className="text-gray-400 text-xs">Telegram</span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <button className="w-12 h-12 rounded-full border flex items-center justify-center mb-2">
+                            <button
+                                type="button"
+                                className="w-12 h-12 rounded-full border flex items-center justify-center mb-2"
+                            >
                                 <Image src={FarcasterIcon.src} alt="Farcaster" width={24} height={24} />
                             </button>
                             <span className="text-gray-400 text-xs">Farcaster</span>

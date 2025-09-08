@@ -1,12 +1,6 @@
 "use client"
 
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 type InfoDrawerProps = {
     isOpen: boolean
@@ -16,14 +10,12 @@ type InfoDrawerProps = {
 export function InfoDrawer({ isOpen, onClose }: InfoDrawerProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent 
+            <DialogContent
                 className="font-schibsted-grotesk max-w-2xl max-h-[90vh] overflow-y-auto"
                 style={{ backgroundColor: "#161616" }}
             >
                 <DialogHeader className="border-b border-gray-800 pb-6">
-                    <DialogTitle className="text-xl font-bold text-white text-left">
-                        How to Play Blitz?
-                    </DialogTitle>
+                    <DialogTitle className="text-xl font-bold text-white text-left">How to Play Blitz?</DialogTitle>
                     <DialogDescription className="text-sm text-left text-gray-300">
                         Welcome to ⚡ Blitz!
                     </DialogDescription>

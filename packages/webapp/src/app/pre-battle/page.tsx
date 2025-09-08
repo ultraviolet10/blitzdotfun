@@ -235,7 +235,10 @@ function PreBattle() {
                             >
                                 Watch Live
                             </Link>
-                            <button className="px-6 py-3 bg-[#1A1A1A] border border-[#2A2A2A] text-white font-medium rounded-lg hover:bg-[#2A2A2A] transition-colors">
+                            <button
+                                type="button"
+                                className="px-6 py-3 bg-[#1A1A1A] border border-[#2A2A2A] text-white font-medium rounded-lg hover:bg-[#2A2A2A] transition-colors"
+                            >
                                 Get Notified
                             </button>
                         </div>

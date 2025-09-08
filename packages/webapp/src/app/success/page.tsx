@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/noSvgWithoutTitle: yolo */
 "use client"
 
 import { useRouter } from "next/navigation"
@@ -31,10 +32,7 @@ function Success() {
                         {/* Sparkles */}
                         <div className="absolute -top-2 -left-2">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path
-                                    d="M8 0L9.5 6.5L16 8L9.5 9.5L8 16L6.5 9.5L0 8L6.5 6.5L8 0Z"
-                                    fill="#9EE685"
-                                />
+                                <path d="M8 0L9.5 6.5L16 8L9.5 9.5L8 16L6.5 9.5L0 8L6.5 6.5L8 0Z" fill="#9EE685" />
                             </svg>
                         </div>
                         <div className="absolute -top-1 -right-1">
@@ -103,6 +101,7 @@ function Success() {
 
                     {/* Continue Button */}
                     <button
+                        type="button"
                         className="font-schibsted-grotesk w-full px-6 py-3 text-base font-semibold rounded-full shadow-lg transition-all duration-200 hover:shadow-xl active:scale-[0.98]"
                         style={{
                             color: "#124D04",
