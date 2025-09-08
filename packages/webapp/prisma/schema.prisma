@@ -1,0 +1,231 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Privy User model with BlitzUser integration
+model User {
+  id        String   @id // Privy user ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // BlitzUser derived fields
+  walletAddress String? // Primary wallet address (from direct wallet or cross-app)
+  walletType    String? // Human-readable wallet type
+  isZoraLogin   Boolean @default(false) // Whether user logged in via Zora cross-app
+
+  // Direct wallet connection
+  wallet    Wallet?
+  
+  // Linked accounts (cross-app, etc.)
+  linkedAccounts LinkedAccount[]
+  
+  // Zora profile data
+  zoraProfile ZoraProfile?
+
+  @@map("users")
+}
+
+// Wallet model for direct wallet connections
+model Wallet {
+  id               String @id @default(cuid())
+  address          String @unique
+  walletClientType String?
+  
+  // Relations
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("wallets")
+}
+
+// Linked accounts model (for cross-app authentication like Zora)
+model LinkedAccount {
+  id   String @id @default(cuid())
+  type String // "cross_app", etc.
+  
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Smart wallets associated with this linked account
+  smartWallets SmartWallet[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, type])
+  @@map("linked_accounts")
+}
+
+// Smart wallets model (for cross-app linked accounts)
+model SmartWallet {
+  id      String @id @default(cuid())
+  address String @unique
+  
+  // Relations
+  linkedAccountId String
+  linkedAccount   LinkedAccount @relation(fields: [linkedAccountId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("smart_wallets")
+}
+
+// Zora profile model (stores Zora profile data from BlitzUser)
+model ZoraProfile {
+  id          String  @id @default(cuid())
+  zoraId      String? // Zora's internal ID
+  handle      String? // Zora handle
+  username    String? // Username
+  displayName String? // Display name
+  bio         String? // Bio text
+  website     String? // Website URL
+  
+  // Avatar data (stored as JSON)
+  avatar Json? // { small: string, medium: string, blurhash?: string }
+  
+  // Relations
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("zora_profiles")
+}
+
+// Contest management models
+model Contest {
+  id              String        @id @default(cuid())
+  contestId       String        @unique // Generated contest ID
+  name            String
+  status          ContestStatus @default(AWAITING_DEPOSITS)
+  contractAddress String        // Blockchain contract address
+  
+  // Timing
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  depositDeadline   DateTime?
+  contentDeadline   DateTime?
+  battleEndTime     DateTime?
+  
+  // Relations
+  participants ContestParticipant[]
+  deposits     ContestDeposit[]
+  contentPosts ContestContent[]
+  battle       Battle?
+  
+  @@map("contests")
+}
+
+model ContestParticipant {
+  id            String  @id @default(cuid())
+  handle        String
+  walletAddress String
+  zoraProfile   String? // Zora profile URL
+  
+  // Zora profile data (stored as JSON)
+  zoraProfileData Json? // ZoraProfileData from blitz-oracle
+  
+  // Relations
+  contestId String
+  contest   Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([contestId, walletAddress])
+  @@map("contest_participants")
+}
+
+model ContestDeposit {
+  id            String   @id @default(cuid())
+  walletAddress String
+  detected      Boolean  @default(false)
+  txHash        String?
+  timestamp     DateTime?
+  blockNumber   BigInt?
+  
+  // Relations
+  contestId String
+  contest   Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([contestId, walletAddress])
+  @@map("contest_deposits")
+}
+
+model ContestContent {
+  id            String   @id @default(cuid())
+  walletAddress String
+  detected      Boolean  @default(false)
+  verified      Boolean  @default(false)
+  zoraPostUrl   String?
+  timestamp     DateTime?
+  contentHash   String?
+  
+  // Relations
+  contestId String
+  contest   Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([contestId, walletAddress])
+  @@map("contest_content")
+}
+
+model Battle {
+  id       String  @id @default(cuid())
+  battleId String  @unique // Blockchain battle ID
+  
+  // Timing
+  startTime DateTime?
+  endTime   DateTime?
+  isActive  Boolean   @default(false)
+  
+  // Content coins
+  creatorOneCoin  String? // Address
+  creatorTwoCoin  String? // Address
+  
+  // Metrics
+  totalVolume      Float   @default(0)
+  totalVotes       Int     @default(0)
+  winnerAddress    String? // Wallet address of winner
+  
+  // Relations
+  contestId String  @unique
+  contest   Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("battles")
+}
+
+// Enums
+enum ContestStatus {
+  CREATED
+  AWAITING_DEPOSITS
+  AWAITING_CONTENT
+  ACTIVE_BATTLE
+  COMPLETED
+  FORFEITED
+}
