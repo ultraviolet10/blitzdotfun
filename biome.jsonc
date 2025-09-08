@@ -7,7 +7,15 @@
         "indentWidth": 4,
         "lineEnding": "lf",
         "lineWidth": 120,
-        "attributePosition": "auto"
+        "attributePosition": "auto",
+    },
+    "files": {
+        "includes": [
+        "**/src/**/*.ts", 
+        "**/src/**/*.tsx", 
+        "**/src/**/*.js", 
+        "**/src/**/*.jsx"
+    ]
     },
     "linter": {
         "enabled": true,
@@ -40,7 +48,8 @@
             },
             "suspicious": {
                 "noConfusingLabels": "off"
-            }
+            },
+            
         }
     },
     "javascript": {

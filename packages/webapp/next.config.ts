@@ -1,34 +1,34 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "scontent-iad4-1.choicecdn.com",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "*.choicecdn.com",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "magic.decentralized-content.com",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "*.zora.co",
-        port: "",
-        pathname: "/**",
-      },
-    ],
-  },
-};
+    images: {
+        remotePatterns: [
+            {
+                protocol: "https",
+                hostname: "scontent-iad4-1.choicecdn.com",
+                port: "",
+                pathname: "/**",
+            },
+            {
+                protocol: "https",
+                hostname: "*.choicecdn.com",
+                port: "",
+                pathname: "/**",
+            },
+            {
+                protocol: "https",
+                hostname: "magic.decentralized-content.com",
+                port: "",
+                pathname: "/**",
+            },
+            {
+                protocol: "https",
+                hostname: "*.zora.co",
+                port: "",
+                pathname: "/**",
+            },
+        ],
+    },
+}
 
-export default nextConfig;
+export default nextConfig
