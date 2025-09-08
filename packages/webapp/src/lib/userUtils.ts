@@ -13,8 +13,8 @@
  * These utilities help extract consistent data regardless of connection type.
  */
 
-import type { User } from "@privy-io/react-auth";
-import type { Address } from "viem";
+import type { User } from "@privy-io/react-auth"
+import type { Address } from "viem"
 
 /**
  * Extracts the wallet address from a Privy user object.
@@ -26,21 +26,19 @@ import type { Address } from "viem";
  * This function checks both sources and returns the first valid address found.
  */
 export const getWalletAddress = (user: User): Address | null => {
-  // First check direct wallet connection
-  if (user?.wallet?.address) {
-    return user.wallet.address as Address;
-  }
+    // First check direct wallet connection
+    if (user?.wallet?.address) {
+        return user.wallet.address as Address
+    }
 
-  // Check for cross_app linked accounts (Zora login)
-  const crossAppAccount = user?.linkedAccounts?.find(
-    (account) => account.type === "cross_app"
-  );
-  if (crossAppAccount?.smartWallets?.[0]?.address) {
-    return crossAppAccount.smartWallets[0].address as Address;
-  }
+    // Check for cross_app linked accounts (Zora login)
+    const crossAppAccount = user?.linkedAccounts?.find((account) => account.type === "cross_app")
+    if (crossAppAccount?.smartWallets?.[0]?.address) {
+        return crossAppAccount.smartWallets[0].address as Address
+    }
 
-  return null;
-};
+    return null
+}
 
 /**
  * Returns a human-readable string describing the wallet connection type.
@@ -49,19 +47,17 @@ export const getWalletAddress = (user: User): Address | null => {
  * they connected their wallet (MetaMask, Coinbase, Zora, etc.).
  */
 export const getWalletType = (user: User): string => {
-  if (user?.wallet?.walletClientType) {
-    return user.wallet.walletClientType;
-  }
+    if (user?.wallet?.walletClientType) {
+        return user.wallet.walletClientType
+    }
 
-  const crossAppAccount = user?.linkedAccounts?.find(
-    (account) => account.type === "cross_app"
-  );
-  if (crossAppAccount) {
-    return "Cross-app (Smart Wallet)";
-  }
+    const crossAppAccount = user?.linkedAccounts?.find((account) => account.type === "cross_app")
+    if (crossAppAccount) {
+        return "Cross-app (Smart Wallet)"
+    }
 
-  return "Unknown";
-};
+    return "Unknown"
+}
 
 /**
  * Determines if the user logged in via Zora's cross-app connection.
@@ -76,8 +72,5 @@ export const getWalletType = (user: User): string => {
  * - Analytics and user journey tracking
  */
 export const isZoraLogin = (user: User): boolean => {
-  return (
-    user?.linkedAccounts?.some((account) => account.type === "cross_app") ??
-    false
-  );
-};
+    return user?.linkedAccounts?.some((account) => account.type === "cross_app") ?? false
+}
