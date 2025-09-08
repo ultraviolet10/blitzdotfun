@@ -11,7 +11,7 @@ contract MockCreatorCoin is ICreatorCoin {
     uint256 public vestingEndTime;
     uint256 public totalClaimed;
     uint256 public claimableAmount;
-    
+
     string private _name;
     string private _symbol;
 

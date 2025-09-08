@@ -46,123 +46,6 @@
     },
     {
       "type": "function",
-      "name": "FLYWHEEL_BOOST_BPS",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "FLYWHEEL_FEES_BPS",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "LOSER_CONSOLATION_BPS",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "LOSER_COOLDOWN",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "MAX_COLLECTORS_PER_BATCH",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "MIN_COLLECTOR_REWARD",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "PRECISION_MULTIPLIER",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "PROTOCOL_TREASURY_BPS",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "TRADER_INCENTIVE_BPS",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
       "name": "TREASURY_ROLE",
       "inputs": [],
       "outputs": [
@@ -170,71 +53,6 @@
           "name": "",
           "type": "bytes32",
           "internalType": "bytes32"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "VESTING_DURATION",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "VOLUME_ORACLE_ROLE",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "WINNER_COLLECTOR_BPS",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "WINNER_LIQUID_BPS",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "WINNER_VESTING_BPS",
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
         }
       ],
       "stateMutability": "view"
@@ -298,7 +116,42 @@
           "internalType": "address"
         },
         {
+          "name": "playerOneStake",
+          "type": "uint96",
+          "internalType": "uint96"
+        },
+        {
           "name": "playerTwo",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "playerTwoStake",
+          "type": "uint96",
+          "internalType": "uint96"
+        },
+        {
+          "name": "playerOneCoin",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "startTime",
+          "type": "uint96",
+          "internalType": "uint96"
+        },
+        {
+          "name": "playerTwoCoin",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "endTime",
+          "type": "uint96",
+          "internalType": "uint96"
+        },
+        {
+          "name": "winner",
           "type": "address",
           "internalType": "address"
         },
@@ -308,39 +161,9 @@
           "internalType": "enum BattleState"
         },
         {
-          "name": "startTime",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "endTime",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "playerOneCoin",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "playerTwoCoin",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "playerOneStake",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "playerTwoStake",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "winner",
-          "type": "address",
-          "internalType": "address"
+          "name": "reserved",
+          "type": "uint88",
+          "internalType": "uint88"
         }
       ],
       "stateMutability": "view"
@@ -368,50 +191,6 @@
         }
       ],
       "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "claimTimelockWithdrawal",
-      "inputs": [
-        {
-          "name": "tokenAddress",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "claimVestedTokens",
-      "inputs": [
-        {
-          "name": "tokenAddress",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "depositCreatorTokens",
-      "inputs": [
-        {
-          "name": "coinAddress",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "amount",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
     },
     {
       "type": "function",
@@ -456,14 +235,9 @@
           "internalType": "bytes32"
         },
         {
-          "name": "playerOneScore",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "playerTwoScore",
-          "type": "uint256",
-          "internalType": "uint256"
+          "name": "winner",
+          "type": "address",
+          "internalType": "address"
         },
         {
           "name": "topCollectors",
@@ -471,7 +245,7 @@
           "internalType": "address[]"
         },
         {
-          "name": "collectorBalances",
+          "name": "collectorAmounts",
           "type": "uint256[]",
           "internalType": "uint256[]"
         }
@@ -530,7 +304,42 @@
               "internalType": "address"
             },
             {
+              "name": "playerOneStake",
+              "type": "uint96",
+              "internalType": "uint96"
+            },
+            {
               "name": "playerTwo",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "playerTwoStake",
+              "type": "uint96",
+              "internalType": "uint96"
+            },
+            {
+              "name": "playerOneCoin",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "startTime",
+              "type": "uint96",
+              "internalType": "uint96"
+            },
+            {
+              "name": "playerTwoCoin",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "endTime",
+              "type": "uint96",
+              "internalType": "uint96"
+            },
+            {
+              "name": "winner",
               "type": "address",
               "internalType": "address"
             },
@@ -540,133 +349,11 @@
               "internalType": "enum BattleState"
             },
             {
-              "name": "startTime",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "endTime",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "playerOneCoin",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "playerTwoCoin",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "playerOneStake",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "playerTwoStake",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "winner",
-              "type": "address",
-              "internalType": "address"
+              "name": "reserved",
+              "type": "uint88",
+              "internalType": "uint88"
             }
           ]
-        },
-        {
-          "name": "volumeStats",
-          "type": "uint256[4]",
-          "internalType": "uint256[4]"
-        },
-        {
-          "name": "topTraders",
-          "type": "address[]",
-          "internalType": "address[]"
-        },
-        {
-          "name": "topVolumes",
-          "type": "uint256[]",
-          "internalType": "uint256[]"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "getBattleTopTraders",
-      "inputs": [
-        {
-          "name": "battleId",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "traders",
-          "type": "address[]",
-          "internalType": "address[]"
-        },
-        {
-          "name": "volumes",
-          "type": "uint256[]",
-          "internalType": "uint256[]"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "getBattleTotalVolume",
-      "inputs": [
-        {
-          "name": "battleId",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "totalVolume",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "getBattleVolumeStats",
-      "inputs": [
-        {
-          "name": "battleId",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "totalVolume",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "topTraderCount",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "averageTopTraderVolume",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "topTraderVolume",
-          "type": "uint256",
-          "internalType": "uint256"
         }
       ],
       "stateMutability": "view"
@@ -698,7 +385,42 @@
               "internalType": "address"
             },
             {
+              "name": "playerOneStake",
+              "type": "uint96",
+              "internalType": "uint96"
+            },
+            {
               "name": "playerTwo",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "playerTwoStake",
+              "type": "uint96",
+              "internalType": "uint96"
+            },
+            {
+              "name": "playerOneCoin",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "startTime",
+              "type": "uint96",
+              "internalType": "uint96"
+            },
+            {
+              "name": "playerTwoCoin",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "endTime",
+              "type": "uint96",
+              "internalType": "uint96"
+            },
+            {
+              "name": "winner",
               "type": "address",
               "internalType": "address"
             },
@@ -708,39 +430,9 @@
               "internalType": "enum BattleState"
             },
             {
-              "name": "startTime",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "endTime",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "playerOneCoin",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "playerTwoCoin",
-              "type": "address",
-              "internalType": "address"
-            },
-            {
-              "name": "playerOneStake",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "playerTwoStake",
-              "type": "uint256",
-              "internalType": "uint256"
-            },
-            {
-              "name": "winner",
-              "type": "address",
-              "internalType": "address"
+              "name": "reserved",
+              "type": "uint88",
+              "internalType": "uint88"
             }
           ]
         }
@@ -762,93 +454,6 @@
           "name": "",
           "type": "bytes32",
           "internalType": "bytes32"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "getTraderActivity",
-      "inputs": [
-        {
-          "name": "battleId",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        },
-        {
-          "name": "trader",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "totalVolume",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "lastTradeTime",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "isActive",
-          "type": "bool",
-          "internalType": "bool"
-        },
-        {
-          "name": "currentVolume",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "getTraderRank",
-      "inputs": [
-        {
-          "name": "battleId",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        },
-        {
-          "name": "trader",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "rank",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "getTraderVolume",
-      "inputs": [
-        {
-          "name": "battleId",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        },
-        {
-          "name": "trader",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "volume",
-          "type": "uint256",
-          "internalType": "uint256"
         }
       ],
       "stateMutability": "view"
@@ -944,29 +549,6 @@
         }
       ],
       "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "recordTradeVolume",
-      "inputs": [
-        {
-          "name": "battleId",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        },
-        {
-          "name": "trader",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "volume",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
     },
     {
       "type": "function",
@@ -1162,21 +744,57 @@
       "inputs": [
         {
           "name": "battleId",
-          "type": "uint256",
+          "type": "bytes32",
           "indexed": true,
-          "internalType": "uint256"
+          "internalType": "bytes32"
         },
         {
           "name": "playerOne",
           "type": "address",
-          "indexed": false,
+          "indexed": true,
           "internalType": "address"
         },
         {
           "name": "playerTwo",
           "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "playerOneCoin",
+          "type": "address",
           "indexed": false,
           "internalType": "address"
+        },
+        {
+          "name": "playerOneStake",
+          "type": "uint96",
+          "indexed": false,
+          "internalType": "uint96"
+        },
+        {
+          "name": "playerTwoCoin",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "playerTwoStake",
+          "type": "uint96",
+          "indexed": false,
+          "internalType": "uint96"
+        },
+        {
+          "name": "startTime",
+          "type": "uint96",
+          "indexed": false,
+          "internalType": "uint96"
+        },
+        {
+          "name": "endTime",
+          "type": "uint96",
+          "indexed": false,
+          "internalType": "uint96"
         }
       ],
       "anonymous": false
@@ -1322,37 +940,6 @@
     },
     {
       "type": "event",
-      "name": "TokensLocked",
-      "inputs": [
-        {
-          "name": "creator",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        },
-        {
-          "name": "coinAddress",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        },
-        {
-          "name": "amount",
-          "type": "uint256",
-          "indexed": false,
-          "internalType": "uint256"
-        },
-        {
-          "name": "battleId",
-          "type": "bytes32",
-          "indexed": false,
-          "internalType": "bytes32"
-        }
-      ],
-      "anonymous": false
-    },
-    {
-      "type": "event",
       "name": "TreasuryAddressUpdated",
       "inputs": [
         {
@@ -1454,6 +1041,357 @@
           "internalType": "address"
         }
       ]
+    }
+  ],
+  "MockERC20": [
+    {
+      "type": "constructor",
+      "inputs": [
+        {
+          "name": "name_",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "symbol_",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "decimals_",
+          "type": "uint8",
+          "internalType": "uint8"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "allowance",
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "spender",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "approve",
+      "inputs": [
+        {
+          "name": "spender",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "balanceOf",
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "burn",
+      "inputs": [
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "decimals",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "uint8"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "domainSeparator",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "mint",
+      "inputs": [
+        {
+          "name": "_account",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "name",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "nonces",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "permit",
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "spender",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "deadline",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "v",
+          "type": "uint8",
+          "internalType": "uint8"
+        },
+        {
+          "name": "r",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "s",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "symbol",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "totalSupply",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "transfer",
+      "inputs": [
+        {
+          "name": "to",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "transferFrom",
+      "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "to",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "event",
+      "name": "Approval",
+      "inputs": [
+        {
+          "name": "owner",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "spender",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "Transfer",
+      "inputs": [
+        {
+          "name": "from",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "to",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
     }
   ]
 }
