@@ -4,10 +4,10 @@ import { forfeitContest, getContestById } from "@/lib/contest";
 
 async function handleForfeitContest(
   request: NextRequest,
-  { params }: { params: { contestId: string } }
+  { params }: { params: Promise<{ contestId: string }> }
 ) {
   try {
-    const { contestId } = params;
+    const { contestId } = await params;
 
     // Check if contest exists
     const contest = await getContestById(contestId);
