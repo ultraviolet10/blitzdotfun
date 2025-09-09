@@ -17,6 +17,7 @@ async function handleGetActiveContest() {
         return NextResponse.json({
             success: true,
             contest: {
+                id: contest.id,
                 contestId: contest.contestId,
                 name: contest.name,
                 status: contest.status,
@@ -25,6 +26,10 @@ async function handleGetActiveContest() {
                 contentPosts: contest.contentPosts,
                 createdAt: contest.createdAt,
                 updatedAt: contest.updatedAt,
+                battleStartTime: contest.battleStartTime,
+                battleEndTime: contest.battleEndTime,
+                contentDeadline: contest.contentDeadline,
+                contractAddress: contest.contractAddress,
             },
         })
     } catch (error) {
