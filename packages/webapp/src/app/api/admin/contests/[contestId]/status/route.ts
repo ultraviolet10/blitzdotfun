@@ -4,7 +4,7 @@ import { updateContestStatusManually } from "@/lib/contest"
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { contestId: string } }
+    { params }: { params: Promise<{ contestId: string }> }
 ) {
     try {
         // Authenticate admin
@@ -16,7 +16,7 @@ export async function PATCH(
             )
         }
 
-        const { contestId } = params
+        const { contestId } = await params
         const body = await request.json()
         const { status } = body
 
