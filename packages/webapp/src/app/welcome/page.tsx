@@ -1,6 +1,5 @@
 "use client";
 
-import { deployment } from "@blitzdotfun/blitz-contracts/local";
 import { useAtomValue } from "jotai";
 import Image from "next/image";
 import { useState } from "react";
@@ -48,7 +47,7 @@ function Welcome() {
 
   const handleCopyContract = async () => {
     try {
-      await navigator.clipboard.writeText(deployment.Blitz);
+      await navigator.clipboard.writeText("0x");
       setShowCheckmark(true);
       setCopyTooltip("Copied!");
       setTimeout(() => {
