@@ -32,13 +32,33 @@ export function Header() {
                     </h1>
                 </div>
 
+                {/* Center buttons on larger screens */}
+                <div className="hidden md:flex items-center space-x-6">
+                    <button 
+                        onClick={() => setIsInfoDrawerOpen(true)}
+                        className="text-[#124D04] font-medium hover:text-[#67CE67] transition-colors"
+                    >
+                        How to play?
+                    </button>
+                    <button 
+                        onClick={() => setIsShareDrawerOpen(true)}
+                        className="text-[#124D04] font-medium hover:text-[#67CE67] transition-colors"
+                    >
+                        Share
+                    </button>
+                </div>
+
+                {/* Mobile icons and logout button */}
                 <div className="flex items-center space-x-2">
-                    <button onClick={() => setIsInfoDrawerOpen(true)}>
+                    {/* Mobile only icons */}
+                    <button onClick={() => setIsInfoDrawerOpen(true)} className="md:hidden">
                         <Image src={infoIcon} alt="info" width={24} height={24} />
                     </button>
-                    <button onClick={() => setIsShareDrawerOpen(true)}>
+                    <button onClick={() => setIsShareDrawerOpen(true)} className="md:hidden">
                         <Image src={exportIcon} alt="export" width={24} height={24} />
                     </button>
+                    
+                    {/* Logout button - always at the end */}
                     {ready && authenticated && user ? <Button onClick={logout}>Logout</Button> : null}
                 </div>
             </div>

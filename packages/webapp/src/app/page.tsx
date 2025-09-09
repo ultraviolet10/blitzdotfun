@@ -2,25 +2,23 @@
 
 import { usePrivy } from "@privy-io/react-auth"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
 import blitzLogo from "@/assets/blitzLogo.svg"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function Home() {
     const { ready, authenticated, login } = usePrivy()
-    const router = useRouter()
 
     const handleLogin = () => {
         login()
     }
 
-    useEffect(() => {
-        if (authenticated) {
-            router.replace("/welcome")
-        }
-    }, [authenticated, router])
+    // If authenticated, redirect manually to avoid routing loops
+    if (authenticated) {
+        // Simple redirect - participants go to welcome, others to pre-battle
+        window.location.href = '/pre-battle'
+        return <div>Redirecting...</div>
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">

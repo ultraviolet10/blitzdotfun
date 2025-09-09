@@ -1,261 +1,258 @@
-"use client"
+"use client";
 
-import { usePrivy } from "@privy-io/react-auth"
-import Image from "next/image"
-import Link from "next/link"
-import { useEffect, useState } from "react"
-import blitzLogo from "@/assets/blitzLogo.svg"
-import { AuthGuard } from "@/components/AuthGuard"
-
-interface Contest {
-    contestId: string
-    name: string
-    status: string
-    participants: Array<{
-        handle: string
-        walletAddress: string
-        zoraProfile?: string
-    }>
-    createdAt: string
-}
+import { AuthGuard } from "@/components/AuthGuard";
+import { useContestPolling } from "@/hooks/useContestPolling";
+import { Header } from "@/components/Header";
+import { ContestTimer } from "@/components/ContestTimer";
+import { CreatorPostCard, PostData } from "@/components/CreatorPostCard";
+import { getCreatorCoins, getFirstCoinFromProfile } from "@/lib/getCreatorCoins";
+import VsZorb from "@/assets/vs_zorb.svg";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ContestPage() {
-    return (
-        <AuthGuard>
-            <ContestView />
-        </AuthGuard>
-    )
+  return (
+    <AuthGuard>
+      <Contest />
+    </AuthGuard>
+  );
 }
 
-function ContestView() {
-    const { logout } = usePrivy()
-    const [contest, setContest] = useState<Contest | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState("")
-
-    useEffect(() => {
-        const fetchContest = async () => {
-            try {
-                const response = await fetch("/api/contests/active")
-                const data = await response.json()
-
-                if (response.ok) {
-                    setContest(data.contest)
-                } else {
-                    setError(data.error || "Failed to load contest")
-                }
-            } catch (err) {
-                console.error("Error: ", err)
-                setError("Failed to load contest data")
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchContest()
-    }, [])
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#121212] flex items-center justify-center">
-                <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 border-2 border-[#2A2A2A] border-t-[#67CE67] rounded-full animate-spin"></div>
-                    <span className="text-[#67CE67]">Loading battle...</span>
-                </div>
-            </div>
-        )
+function Contest() {
+  const router = useRouter();
+  const { contest, isPolling } = useContestPolling({
+    enabled: true,
+    interval: 5000,
+    onStatusChange: (oldStatus, newStatus) => {
+      console.log(`Contest status changed: ${oldStatus} → ${newStatus}`)
+      
+      // Handle routing based on contest status
+      if (newStatus === 'CREATED' || newStatus === 'AWAITING_DEPOSITS' || newStatus === 'AWAITING_CONTENT') {
+        router.replace('/pre-battle')
+      } else if (newStatus === 'COMPLETED' || newStatus === 'FORFEITED') {
+        router.replace('/winner')
+      }
+      // For ACTIVE_BATTLE - stay on /contest
     }
-
-    if (error || !contest) {
-        return (
-            <div className="min-h-screen bg-[#121212] size-full">
-                <div className="container mx-auto px-4 py-8">
-                    <header className="flex justify-between items-center mb-12">
-                        <div className="flex items-center gap-4">
-                            <Image src={blitzLogo} alt="Blitz Logo" width={50} height={50} />
-                            <h1 className="text-3xl font-bold text-[#67CE67]">Blitz</h1>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href="/welcome"
-                                className="px-4 py-2 text-sm font-medium text-white bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg hover:bg-[#2A2A2A] transition-colors"
-                            >
-                                Back to Home
-                            </Link>
-                            <button
-                                onClick={logout}
-                                className="px-4 py-2 text-sm font-medium text-white bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg hover:bg-[#2A2A2A] transition-colors"
-                                type="button"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </header>
-
-                    <div className="text-center max-w-2xl mx-auto">
-                        <h2 className="text-2xl font-bold text-white mb-4">No Active Battle</h2>
-                        <p className="text-gray-400 mb-8">
-                            There are no active battles at the moment. Check back later!
-                        </p>
-                        <Link
-                            href="/welcome"
-                            className="inline-block px-8 py-3 bg-[#67CE67] text-black font-medium rounded-lg hover:bg-[#5AB85A] transition-colors"
-                        >
-                            Back to Home
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        )
+  });
+  const [postData, setPostData] = useState<PostData[]>([]);
+  const [loadingCoins, setLoadingCoins] = useState(true);
+  
+  const loading = !contest && isPolling;
+  
+  // Handle routing based on contest status using useEffect to avoid setState-in-render
+  useEffect(() => {
+    if (contest?.status === 'CREATED' || contest?.status === 'AWAITING_DEPOSITS' || contest?.status === 'AWAITING_CONTENT') {
+      router.replace('/pre-battle')
+    } else if (contest?.status === 'COMPLETED' || contest?.status === 'FORFEITED') {
+      router.replace('/winner')
     }
+  }, [contest?.status, router])
 
+  // Fetch real coin data for creators
+  useEffect(() => {
+    const fetchCreatorCoins = async () => {
+      if (!contest?.participants) {
+        setLoadingCoins(false);
+        return;
+      }
+
+      try {
+        const coinDataPromises = contest.participants.map(async (participant) => {
+          if (!participant.walletAddress) return null;
+          
+          const profileData = await getCreatorCoins({
+            identifier: participant.walletAddress,
+            count: 1, // Only need the first coin
+          });
+          
+          const firstCoin = getFirstCoinFromProfile(profileData || {});
+          
+          if (firstCoin) {
+            return {
+              image: firstCoin.mediaContent?.previewImage?.medium || 
+                     firstCoin.mediaContent?.previewImage?.small ||
+                     "https://api.dicebear.com/7.x/shapes/svg?seed=" + participant.handle,
+              zoraUrl: `https://zora.co/coin/base:${firstCoin.address}`,
+              address: firstCoin.address || "",
+              name: firstCoin.name || 'what is "onchain"?',
+              description: firstCoin.description || "Creator coin battle",
+              marketCap: firstCoin.marketCap || "0",
+              volume: firstCoin.volume24h || "0",
+              holders: firstCoin.uniqueHolders?.toString() || "0",
+            } as PostData;
+          }
+          
+          // Fallback to mock data if no coin found
+          return {
+            image: "https://api.dicebear.com/7.x/shapes/svg?seed=" + participant.handle,
+            zoraUrl: `https://zora.co/${participant.handle}`,
+            address: participant.walletAddress,
+            name: 'what is "onchain"?',
+            description: "Creator coin battle",
+            marketCap: "245000",
+            volume: "1683",
+            holders: "4",
+          } as PostData;
+        });
+
+        const results = await Promise.all(coinDataPromises);
+        const validResults = results.filter((data): data is PostData => data !== null);
+        setPostData(validResults);
+      } catch (error) {
+        console.error("Failed to fetch creator coins:", error);
+        // Fallback to mock data on error
+        setPostData([
+          {
+            image: "https://api.dicebear.com/7.x/shapes/svg?seed=post1",
+            zoraUrl: "https://zora.co/coin/base/0x123",
+            address: "0x123456789abcdef",
+            name: 'what is "onchain"?',
+            description: "Exploring the fundamentals of blockchain technology",
+            marketCap: "245000",
+            volume: "1683",
+            holders: "4",
+          },
+          {
+            image: "https://api.dicebear.com/7.x/shapes/svg?seed=post2",
+            zoraUrl: "https://zora.co/coin/base/0x456",
+            address: "0x456789abcdef123",
+            name: 'what is "onchain"?',
+            description: "Deep dive into decentralized systems",
+            marketCap: "200000",
+            volume: "1683",
+            holders: "4",
+          },
+        ]);
+      } finally {
+        setLoadingCoins(false);
+      }
+    };
+
+    fetchCreatorCoins();
+  }, [contest]);
+
+  if (loading || loadingCoins) {
     return (
-        <div className="min-h-screen bg-[#121212] size-full">
-            <div className="container mx-auto px-4 py-8">
-                <header className="flex justify-between items-center mb-12">
-                    <div className="flex items-center gap-4">
-                        <Image src={blitzLogo} alt="Blitz Logo" width={50} height={50} />
-                        <h1 className="text-3xl font-bold text-[#67CE67]">Blitz</h1>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Link
-                            href="/welcome"
-                            className="px-4 py-2 text-sm font-medium text-white bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg hover:bg-[#2A2A2A] transition-colors"
-                        >
-                            Back to Home
-                        </Link>
-                        <button
-                            onClick={logout}
-                            className="px-4 py-2 text-sm font-medium text-white bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg hover:bg-[#2A2A2A] transition-colors"
-                            type="button"
-                        >
-                            Logout
-                        </button>
-                    </div>
-                </header>
-
-                <div className="max-w-4xl mx-auto">
-                    {/* Contest Header */}
-                    <div className="text-center mb-12">
-                        <h2 className="text-4xl font-bold text-white mb-4">{contest.name}</h2>
-                        <div className="flex items-center justify-center gap-4">
-                            <span className="px-3 py-1 bg-[#67CE67] text-black text-sm rounded-lg font-medium">
-                                {contest.status.replace("_", " ").toUpperCase()}
-                            </span>
-                            <span className="text-gray-400">
-                                Started {new Date(contest.createdAt).toLocaleDateString()}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Battle Arena */}
-                    <div className="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] p-8 mb-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-                            {/* Creator One */}
-                            <div className="text-center">
-                                <div className="w-24 h-24 bg-gradient-to-br from-[#67CE67] to-[#5AB85A] rounded-full mx-auto mb-4 flex items-center justify-center">
-                                    <span className="text-2xl font-bold text-black">
-                                        {contest.participants[0]?.handle.charAt(0).toUpperCase()}
-                                    </span>
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">{contest.participants[0]?.handle}</h3>
-                                <p className="text-gray-400 text-sm font-mono break-all">
-                                    {contest.participants[0]?.walletAddress}
-                                </p>
-                                {contest.participants[0]?.zoraProfile && (
-                                    <a
-                                        href={contest.participants[0].zoraProfile}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-block mt-2 text-[#67CE67] hover:text-[#5AB85A] text-sm"
-                                    >
-                                        View Zora Profile
-                                    </a>
-                                )}
-                            </div>
-
-                            {/* VS Divider */}
-                            <div className="text-center">
-                                <div className="text-4xl font-bold text-[#67CE67] mb-4">VS</div>
-                                <div className="h-px bg-[#2A2A2A] w-full"></div>
-                            </div>
-
-                            {/* Creator Two */}
-                            <div className="text-center">
-                                <div className="w-24 h-24 bg-gradient-to-br from-[#FF6B6B] to-[#FF5252] rounded-full mx-auto mb-4 flex items-center justify-center">
-                                    <span className="text-2xl font-bold text-white">
-                                        {contest.participants[1]?.handle.charAt(0).toUpperCase()}
-                                    </span>
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2">{contest.participants[1]?.handle}</h3>
-                                <p className="text-gray-400 text-sm font-mono break-all">
-                                    {contest.participants[1]?.walletAddress}
-                                </p>
-                                {contest.participants[1]?.zoraProfile && (
-                                    <a
-                                        href={contest.participants[1].zoraProfile}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-block mt-2 text-[#67CE67] hover:text-[#5AB85A] text-sm"
-                                    >
-                                        View Zora Profile
-                                    </a>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Battle Status */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div className="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] p-6">
-                            <h3 className="text-lg font-bold text-white mb-4">Battle Progress</h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-400">Deposits</span>
-                                    <span className="text-[#67CE67]">Pending</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-400">Content Submission</span>
-                                    <span className="text-yellow-400">Waiting</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-400">Battle Phase</span>
-                                    <span className="text-gray-500">Not Started</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] p-6">
-                            <h3 className="text-lg font-bold text-white mb-4">How to Participate</h3>
-                            <div className="space-y-2 text-sm text-gray-400">
-                                <p>• Watch the creators compete in real-time</p>
-                                <p>• Vote for your favorite content when battle starts</p>
-                                <p>• Engage with the community during the battle</p>
-                                <p>• See live results and winner announcement</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Call to Action */}
-                    <div className="text-center">
-                        <div className="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] p-8">
-                            <h3 className="text-2xl font-bold text-white mb-4">Battle Starting Soon!</h3>
-                            <p className="text-gray-400 mb-6">
-                                Creators are preparing their content. The battle will begin once both participants have
-                                made their deposits and submitted their content.
-                            </p>
-                            <div className="flex justify-center gap-4">
-                                <button className="px-6 py-3 bg-[#67CE67] text-black font-medium rounded-lg hover:bg-[#5AB85A] transition-colors">
-                                    Get Notified
-                                </button>
-                                <button className="px-6 py-3 bg-[#1A1A1A] border border-[#2A2A2A] text-white font-medium rounded-lg hover:bg-[#2A2A2A] transition-colors">
-                                    Share Battle
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <div className="min-h-screen size-full flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 border-2 border-[#2A2A2A] border-t-[#67CE67] rounded-full animate-spin"></div>
+            <span className="text-[#67CE67]">Loading battle...</span>
+          </div>
         </div>
-    )
+      </div>
+    );
+  }
+
+  if (!contest) {
+    return (
+      <div className="min-h-screen size-full flex flex-col">
+        <Header />
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+          <div className="w-full max-w-xl text-center space-y-6">
+            <div className="space-y-2">
+              <h2
+                className="font-dela-gothic-one text-4xl font-bold"
+                style={{
+                  color: "#F1F1F1",
+                  WebkitTextStroke: "1px #1C7807",
+                  letterSpacing: "0.1em",
+                }}
+              >
+                NO ACTIVE BATTLE
+              </h2>
+              <p
+                className="font-schibsted-grotesk font-medium text-lg"
+                style={{
+                  color: "#124D04",
+                }}
+              >
+                There are no active battles at the moment. Check back later!
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="pb-8 text-center">
+          <h3
+            className="font-dela-gothic-one text-2xl font-bold opacity-60"
+            style={{
+              color: "#F1F1F1",
+              WebkitTextStroke: "1px #1C7807",
+              letterSpacing: "0.1em",
+            }}
+          >
+            THE ARENA FOR CREATOR COINS.
+          </h3>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen size-full flex flex-col">
+      <Header />
+
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-4xl text-center space-y-8">
+          {/* Battle Timer */}
+          <div className="space-y-4">
+            <ContestTimer 
+              time={contest?.battleEndTime ? new Date(contest.battleEndTime) : undefined} 
+              isStart={false} 
+            />
+          </div>
+
+          {/* Battle Cards with VS */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+            {/* First Creator Post Card */}
+            {contest.participants[0]?.zoraProfileData && postData[0] && (
+              <div className="flex-1 max-w-lg">
+                <CreatorPostCard
+                  creator={contest.participants[0].zoraProfileData}
+                  postData={postData[0]}
+                />
+              </div>
+            )}
+
+            {/* VS Zorb */}
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <Image
+                src={VsZorb}
+                alt="VS"
+                width={75}
+                height={75}
+                className="animate-pulse"
+              />
+            </div>
+
+            {/* Second Creator Post Card */}
+            {contest.participants[1]?.zoraProfileData && postData[1] && (
+              <div className="flex-1 max-w-lg">
+                <CreatorPostCard
+                  creator={contest.participants[1].zoraProfileData}
+                  postData={postData[1]}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="pb-8 text-center">
+        <h3
+          className="font-dela-gothic-one text-2xl font-bold opacity-60"
+          style={{
+            color: "#F1F1F1",
+            WebkitTextStroke: "1px #1C7807",
+            letterSpacing: "0.1em",
+          }}
+        >
+          THE ARENA FOR CREATOR COINS.
+        </h3>
+      </div>
+    </div>
+  );
 }

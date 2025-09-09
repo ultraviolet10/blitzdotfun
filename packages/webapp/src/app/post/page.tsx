@@ -3,24 +3,43 @@
 import Image from "next/image";
 import arrowRightUp2 from "@/assets/arrow_up_right_2.svg";
 import { AuthGuard } from "@/components/AuthGuard";
+import { RoutingWrapper } from "@/components/RoutingWrapper";
 import { Header } from "@/components/Header";
 import { PostingTimer } from "@/components/PostingTimer";
+import { useContest } from "@/hooks/useContest";
 
 export default function PostPage() {
   return (
     <AuthGuard>
-      <Post />
+      <RoutingWrapper>
+        <Post />
+      </RoutingWrapper>
     </AuthGuard>
   );
 }
 
 function Post() {
-  const contestEndTime = new Date(Date.now() + 5 * 60 * 1000);
+  const { contest, loading } = useContest();
 
   const handlePostNow = () => {
     // Navigate to posting interface or external platform
     window.open("https://zora.co/", "_blank");
   };
+
+  // Show loading state while checking contest data
+  if (loading) {
+    return (
+      <div className="min-h-screen size-full flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 border-2 border-[#2A2A2A] border-t-[#67CE67] rounded-full animate-spin"></div>
+            <span className="text-[#67CE67]">Loading contest info...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen size-full flex flex-col">
@@ -44,7 +63,9 @@ function Post() {
 
           {/* Timer */}
           <div className="flex justify-center">
-            <PostingTimer time={contestEndTime} />
+            <PostingTimer 
+              time={contest?.contentDeadline ? new Date(contest.contentDeadline) : undefined} 
+            />
           </div>
 
           {/* Instruction Text */}

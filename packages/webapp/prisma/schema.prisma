@@ -120,9 +120,9 @@ model Contest {
   // Timing
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  depositDeadline   DateTime?
+  battleStartTime   DateTime? // When the battle begins
+  battleEndTime     DateTime? // When the battle ends
   contentDeadline   DateTime?
-  battleEndTime     DateTime?
   
   // Relations
   participants ContestParticipant[]

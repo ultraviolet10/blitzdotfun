@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getActiveContest } from "@/lib/contest"
+import { getActiveContest, updateContestStatus } from "@/lib/contest"
 
 export async function GET() {
     try {
@@ -13,19 +13,36 @@ export async function GET() {
             })
         }
 
+        // Update contest status based on current time before returning
+        await updateContestStatus(contest.contestId)
+        
+        // Fetch the contest again to get the updated status
+        const updatedContest = await getActiveContest()
+        
+        if (!updatedContest) {
+            return NextResponse.json({
+                success: true,
+                contest: null,
+                message: "No active contest found",
+            })
+        }
+
         return NextResponse.json({
             success: true,
             contest: {
-                contestId: contest.contestId,
-                name: contest.name,
-                status: contest.status,
-                participants: contest.participants.map((p) => ({
+                contestId: updatedContest.contestId,
+                name: updatedContest.name,
+                status: updatedContest.status,
+                participants: updatedContest.participants.map((p) => ({
                     handle: p.handle,
                     walletAddress: p.walletAddress,
                     zoraProfile: p.zoraProfile,
                     zoraProfileData: p.zoraProfileData,
                 })),
-                createdAt: contest.createdAt,
+                createdAt: updatedContest.createdAt,
+                battleStartTime: updatedContest.battleStartTime,
+                battleEndTime: updatedContest.battleEndTime,
+                contentDeadline: updatedContest.contentDeadline,
             },
         })
     } catch (error) {

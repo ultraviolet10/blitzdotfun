@@ -8,19 +8,22 @@ import arrowRightUp2 from "@/assets/arrow_up_right_2.svg";
 import copyIcon from "@/assets/copy.svg";
 import { compoundUserAtom } from "@/atoms/userAtoms";
 import { AuthGuard } from "@/components/AuthGuard";
+import { RoutingWrapper } from "@/components/RoutingWrapper";
 import { Header } from "@/components/Header";
 import { useContest } from "@/hooks/useContest";
 
 export default function WelcomePage() {
   return (
     <AuthGuard>
-      <Welcome />
+      <RoutingWrapper>
+        <Welcome />
+      </RoutingWrapper>
     </AuthGuard>
   );
 }
 
 function Welcome() {
-  const { isParticipant, contest, participantRole, loading } = useContest();
+  const { contest, participantRole, loading } = useContest();
   const blitzUser = useAtomValue(compoundUserAtom);
   const { profile } = blitzUser;
   const [showCheckmark, setShowCheckmark] = useState(false);
@@ -87,18 +90,7 @@ function Welcome() {
     );
   }
 
-  // If user is not a participant and there's an active contest, redirect to pre-battle page
-  if (contest && !isParticipant) {
-    window.location.href = "/pre-battle";
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 border-2 border-[#2A2A2A] border-t-[#67CE67] rounded-full animate-spin"></div>
-          <span className="text-[#67CE67]">Redirecting to battle...</span>
-        </div>
-      </div>
-    );
-  }
+  // Routing is now handled by RoutingWrapper, no manual redirects needed
 
   return (
     <div className="min-h-screen size-full flex flex-col">

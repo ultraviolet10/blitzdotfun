@@ -1,13 +1,30 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
+import { useContest } from "@/hooks/useContest"
 
 type ContestTimerProps = {
-    time: Date
+    time?: Date // Make optional since we'll get it from contest data
     isStart: boolean
 }
 
 export function ContestTimer({ time, isStart }: ContestTimerProps) {
+    const { contest } = useContest()
+    
+    // Use dynamic timer from contest data or fallback to prop
+    const timerDate = useMemo(() => {
+        // Determine which timer to show based on contest status and isStart prop
+        if (contest) {
+            if (isStart && contest.battleStartTime) {
+                // Show "Battle starts in" timer
+                return new Date(contest.battleStartTime)
+            } else if (!isStart && contest.battleEndTime) {
+                // Show "Battle ends in" timer
+                return new Date(contest.battleEndTime)
+            }
+        }
+        return time || new Date(Date.now() + 60 * 60 * 1000) // 1 hour fallback
+    }, [contest, isStart, time])
     const [timeLeft, setTimeLeft] = useState({
         days: 0,
         hours: 0,
@@ -18,7 +35,7 @@ export function ContestTimer({ time, isStart }: ContestTimerProps) {
     useEffect(() => {
         const calculateTimeLeft = () => {
             const now = Date.now()
-            const contestTime = time.getTime()
+            const contestTime = timerDate.getTime()
             const difference = contestTime - now
 
             if (difference > 0) {
@@ -37,7 +54,7 @@ export function ContestTimer({ time, isStart }: ContestTimerProps) {
         const timer = setInterval(calculateTimeLeft, 1000)
 
         return () => clearInterval(timer)
-    }, [time])
+    }, [timerDate])
 
     const formatTime = (value: number) => value.toString().padStart(2, "0")
 
@@ -63,7 +80,7 @@ export function ContestTimer({ time, isStart }: ContestTimerProps) {
                 </div>
 
                 <div className="bg-white px-3 py-4 rounded-b-2xl">
-                    <div className="flex items-center justify-center text-center font-dela-gothic-one">
+                    <div className="flex items-center justify-center text-center font-dela-gothic-one mx-auto max-w-md">
                         <div className="flex-1 flex flex-col gap-2">
                             <span className="text-4xl text-black opacity-25">{formatTime(timeLeft.days)}</span>
                             <span className="text-xs font-semibold font-schibsted-grotesk" style={{ color: "#161616" }}>

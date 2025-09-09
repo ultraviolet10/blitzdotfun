@@ -2,12 +2,15 @@
 
 import { useRouter } from "next/navigation"
 import { AuthGuard } from "@/components/AuthGuard"
+import { RoutingWrapper } from "@/components/RoutingWrapper"
 import { Header } from "@/components/Header"
 
 export default function SuccessPage() {
     return (
         <AuthGuard>
-            <Success />
+            <RoutingWrapper>
+                <Success />
+            </RoutingWrapper>
         </AuthGuard>
     )
 }

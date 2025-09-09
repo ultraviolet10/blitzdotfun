@@ -3,22 +3,20 @@
 import { AuthGuard } from "@/components/AuthGuard";
 import { useContestPolling } from "@/hooks/useContestPolling";
 import { Header } from "@/components/Header";
-import { ContestTimer } from "@/components/ContestTimer";
-import { CreatorCard } from "@/components/CreatorCard";
-import VsZorb from "@/assets/vs_zorb.svg";
-import Image from "next/image";
+import { WinnerAnnouncement } from "@/components/WinnerAnnouncement";
+import { EndedCreatorCards } from "@/components/EndedCreatorCards";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function PreBattlePage() {
+export default function WinnerPage() {
   return (
     <AuthGuard>
-      <PreBattle />
+      <PostBattle />
     </AuthGuard>
   );
 }
 
-function PreBattle() {
+function PostBattle() {
   const router = useRouter();
   const { contest, isPolling } = useContestPolling({
     enabled: true,
@@ -27,12 +25,12 @@ function PreBattle() {
       console.log(`Contest status changed: ${oldStatus} → ${newStatus}`)
       
       // Handle routing based on contest status
-      if (newStatus === 'ACTIVE_BATTLE') {
+      if (newStatus === 'CREATED' || newStatus === 'AWAITING_DEPOSITS' || newStatus === 'AWAITING_CONTENT') {
+        router.replace('/pre-battle')
+      } else if (newStatus === 'ACTIVE_BATTLE') {
         router.replace('/contest')
-      } else if (newStatus === 'COMPLETED' || newStatus === 'FORFEITED') {
-        router.replace('/winner')
       }
-      // For CREATED, AWAITING_DEPOSITS, AWAITING_CONTENT - stay on /pre-battle
+      // For COMPLETED/FORFEITED - stay on /winner
     }
   });
   
@@ -40,14 +38,13 @@ function PreBattle() {
   
   // Handle routing based on contest status using useEffect to avoid setState-in-render
   useEffect(() => {
-    if (contest?.status === 'ACTIVE_BATTLE') {
+    if (contest?.status === 'CREATED' || contest?.status === 'AWAITING_DEPOSITS' || contest?.status === 'AWAITING_CONTENT') {
+      router.replace('/pre-battle')
+    } else if (contest?.status === 'ACTIVE_BATTLE') {
       router.replace('/contest')
-    } else if (contest?.status === 'COMPLETED' || contest?.status === 'FORFEITED') {
-      router.replace('/winner')
     }
   }, [contest?.status, router])
 
-  // Show loading state while checking contest data
   if (loading) {
     return (
       <div className="min-h-screen size-full flex flex-col">
@@ -55,19 +52,17 @@ function PreBattle() {
         <div className="flex-1 flex items-center justify-center">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 border-2 border-[#2A2A2A] border-t-[#67CE67] rounded-full animate-spin"></div>
-            <span className="text-[#67CE67]">Loading battle info...</span>
+            <span className="text-[#67CE67]">Loading results...</span>
           </div>
         </div>
       </div>
     );
   }
 
-  // If no active contest, show message
   if (!contest) {
     return (
       <div className="min-h-screen size-full flex flex-col">
         <Header />
-
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
           <div className="w-full max-w-xl text-center space-y-6">
             <div className="space-y-2">
@@ -79,7 +74,7 @@ function PreBattle() {
                   letterSpacing: "0.1em",
                 }}
               >
-                NO ACTIVE BATTLE
+                NO BATTLE RESULTS
               </h2>
               <p
                 className="font-schibsted-grotesk font-medium text-lg"
@@ -87,12 +82,11 @@ function PreBattle() {
                   color: "#124D04",
                 }}
               >
-                There are no active battles at the moment. Check back later!
+                No completed battles found. Check back after a battle ends!
               </p>
             </div>
           </div>
         </div>
-
         <div className="pb-8 text-center">
           <h3
             className="font-dela-gothic-one text-2xl font-bold opacity-60"
@@ -115,40 +109,14 @@ function PreBattle() {
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-4xl text-center space-y-8">
-          {/* Battle Header */}
+          {/* Winner Announcement */}
           <div className="space-y-4">
-            <ContestTimer 
-              time={contest?.battleStartTime ? new Date(contest.battleStartTime) : undefined} 
-              isStart={true} 
-            />
+            <WinnerAnnouncement />
           </div>
 
-          {/* Creator Cards with VS */}
-          <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-            {/* First Creator Card */}
-            {contest.participants[0]?.zoraProfileData && (
-              <div className="flex-1 max-w-lg">
-                <CreatorCard creator={contest.participants[0].zoraProfileData} />
-              </div>
-            )}
-            
-            {/* VS Zorb */}
-            <div className="flex-shrink-0 flex items-center justify-center">
-              <Image
-                src={VsZorb}
-                alt="VS"
-                width={75}
-                height={75}
-                className="animate-pulse"
-              />
-            </div>
-            
-            {/* Second Creator Card */}
-            {contest.participants[1]?.zoraProfileData && (
-              <div className="flex-1 max-w-lg">
-                <CreatorCard creator={contest.participants[1].zoraProfileData} />
-              </div>
-            )}
+          {/* Battle Results Cards */}
+          <div className="flex flex-col items-center justify-center gap-4">
+            <EndedCreatorCards />
           </div>
         </div>
       </div>

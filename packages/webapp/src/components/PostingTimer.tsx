@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 
 type PostingTimerProps = {
-  time: Date;
+  time?: Date;
 };
 
 export function PostingTimer({ time }: PostingTimerProps) {
@@ -14,6 +14,11 @@ export function PostingTimer({ time }: PostingTimerProps) {
 
   useEffect(() => {
     const calculateTimeLeft = () => {
+      if (!time) {
+        setTimeLeft({ minutes: 0, seconds: 0 });
+        return;
+      }
+      
       const now = new Date().getTime();
       const contestTime = time.getTime();
       const difference = contestTime - now;

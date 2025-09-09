@@ -48,11 +48,18 @@ export interface CreateContestInput {
  * Create a new contest (only one active contest allowed at a time)
  */
 export async function createContest(input: CreateContestInput): Promise<ContestWithDetails> {
-    // Check for existing active contests
-    const activeContest = await getActiveContest()
-    if (activeContest) {
+    // Check for existing active contests (not completed/forfeited)
+    const hasActive = await hasActiveContest()
+    if (hasActive) {
+        const activeContest = await prisma.contest.findFirst({
+            where: {
+                status: {
+                    notIn: ["COMPLETED", "FORFEITED"],
+                },
+            },
+        })
         throw new Error(
-            `Cannot create new contest. Active contest already exists: ${activeContest.contestId} (${activeContest.name})`,
+            `Cannot create new contest. Active contest already exists: ${activeContest?.contestId} (${activeContest?.name})`,
         )
     }
 
@@ -68,12 +75,20 @@ export async function createContest(input: CreateContestInput): Promise<ContestW
     const participantOneProfileData = participantOneProfile.status === "fulfilled" ? participantOneProfile.value : null
     const participantTwoProfileData = participantTwoProfile.status === "fulfilled" ? participantTwoProfile.value : null
 
+    // Set contest timers - 1 hour from creation for battle start
+    const now = new Date()
+    const battleStartTime = new Date(now.getTime() + 60 * 60 * 1000) // 1 hour from now
+    const battleEndTime = new Date(battleStartTime.getTime() + 2 * 60 * 60 * 1000) // 2 hours after battle starts
+
     const contest = await prisma.contest.create({
         data: {
             contestId,
             name: input.name,
             status: "AWAITING_DEPOSITS",
             contractAddress: input.contractAddress,
+            battleStartTime, // When the battle begins (1 hour from creation)
+            battleEndTime, // When the battle ends (3 hours from creation)
+            contentDeadline: new Date(now.getTime() + 5 * 60 * 1000), // 5 minutes for content submission
             participants: {
                 create: [
                     {
@@ -132,16 +147,12 @@ export async function createContest(input: CreateContestInput): Promise<ContestW
 }
 
 /**
- * Get the currently active contest (if any)
- * A contest is considered active if its status is not 'completed' or 'forfeited'
+ * Get the current contest (active or recently completed)
+ * Returns the most recent contest, including completed/forfeited ones for winner display
+ * Ensures only one active contest exists at a time for contest creation logic
  */
 export async function getActiveContest(): Promise<ContestWithDetails | null> {
     const contest = await prisma.contest.findFirst({
-        where: {
-            status: {
-                notIn: ["COMPLETED", "FORFEITED"],
-            },
-        },
         include: {
             participants: true,
             deposits: true,
@@ -153,6 +164,22 @@ export async function getActiveContest(): Promise<ContestWithDetails | null> {
     })
 
     return contest
+}
+
+/**
+ * Check if there's currently an active contest (not completed/forfeited)
+ * Used for preventing multiple active contests
+ */
+export async function hasActiveContest(): Promise<boolean> {
+    const activeContest = await prisma.contest.findFirst({
+        where: {
+            status: {
+                notIn: ["COMPLETED", "FORFEITED"],
+            },
+        },
+    })
+
+    return activeContest !== null
 }
 
 /**
@@ -319,11 +346,98 @@ export async function getContestStatus(contestId?: string) {
             readyForBattle: contest.status === "ACTIVE_BATTLE",
         },
         deadlines: {
-            deposit: contest.depositDeadline,
             content: contest.contentDeadline,
+            battleStart: contest.battleStartTime,
             battleEnd: contest.battleEndTime,
         },
         createdAt: contest.createdAt,
         lastUpdated: new Date(),
     }
+}
+
+// Function to check and update contest status based on timing
+export async function updateContestStatus(contestId: string) {
+    const contest = await prisma.contest.findUnique({
+        where: { contestId },
+        include: {
+            participants: true,
+            deposits: true,
+            contentPosts: true,
+        },
+    })
+
+    if (!contest) {
+        throw new Error("Contest not found")
+    }
+
+    const now = new Date()
+    let newStatus = contest.status
+
+    // Check if battle should start
+    if (
+        contest.battleStartTime &&
+        now >= contest.battleStartTime &&
+        (contest.status === "AWAITING_DEPOSITS" || contest.status === "AWAITING_CONTENT")
+    ) {
+        newStatus = "ACTIVE_BATTLE"
+    }
+
+    // Check if battle should end
+    if (
+        contest.battleEndTime &&
+        now >= contest.battleEndTime &&
+        contest.status === "ACTIVE_BATTLE"
+    ) {
+        newStatus = "COMPLETED"
+    }
+
+    // Update status if it changed
+    if (newStatus !== contest.status) {
+        await prisma.contest.update({
+            where: { contestId },
+            data: { status: newStatus },
+        })
+    }
+
+    return newStatus
+}
+
+// Function to get contest with updated status
+export async function getContestWithUpdatedStatus(contestId: string) {
+    // First update the status
+    await updateContestStatus(contestId)
+    
+    // Then fetch the updated contest
+    return await prisma.contest.findUnique({
+        where: { contestId },
+        include: {
+            participants: true,
+            deposits: true,
+            contentPosts: true,
+        },
+    })
+}
+
+/**
+ * Manually update contest status (admin function)
+ */
+export async function updateContestStatusManually(contestId: string, status: ContestStatus): Promise<ContestWithDetails> {
+    const updateData: { status: ContestStatus; battleStartTime?: Date } = { status }
+    
+    // Reset timer when status changes to ACTIVE_BATTLE
+    if (status === 'ACTIVE_BATTLE') {
+        updateData.battleStartTime = new Date()
+    }
+    
+    const contest = await prisma.contest.update({
+        where: { contestId },
+        data: updateData,
+        include: {
+            participants: true,
+            deposits: true,
+            contentPosts: true,
+        },
+    })
+
+    return contest
 }

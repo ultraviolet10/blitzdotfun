@@ -62,3 +62,20 @@ export function requireAdminAuth<T extends unknown[]>(
         return handler(request, ...args)
     }
 }
+
+/**
+ * Authenticate admin request and return result
+ */
+export async function authenticateAdmin(request: NextRequest): Promise<{
+    success: boolean
+    error?: string
+}> {
+    if (!verifyAdminAuth(request)) {
+        return {
+            success: false,
+            error: "Unauthorized - Admin authentication required"
+        }
+    }
+    
+    return { success: true }
+}
