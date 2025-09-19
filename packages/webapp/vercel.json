@@ -1,6 +1,6 @@
 {
-  "buildCommand": "bun run build",
-  "outputDirectory": ".next",
+  "buildCommand": "cd packages/contracts && bun install && bun run build && cd ../webapp && bun install && bun run build",
+  "outputDirectory": "packages/webapp/.next",
   "installCommand": "bun install",
   "framework": "nextjs",
   "functions": {

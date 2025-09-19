@@ -1,4 +1,3 @@
-import { deployment } from "@blitzdotfun/blitz-contracts/local"
 import { useAtomValue } from "jotai"
 import { useState } from "react"
 import { compoundUserAtom } from "@/atoms/userAtoms"
@@ -10,7 +9,7 @@ const WelcomeCard = () => {
 
     const handleCopyAddress = async () => {
         try {
-            await navigator.clipboard.writeText(deployment.Blitz)
+            await navigator.clipboard.writeText("xyz")
             setCopied(true)
             setTimeout(() => setCopied(false), 2000)
         } catch (err) {
@@ -71,7 +70,7 @@ const WelcomeCard = () => {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-gray-400 mb-1">Contract Address</p>
-                                        <p className="text-[#67CE67] font-mono text-sm break-all">{deployment.Blitz}</p>
+                                        <p className="text-[#67CE67] font-mono text-sm break-all">{"xyz"}</p>
                                     </div>
                                     <button
                                         type="button"
